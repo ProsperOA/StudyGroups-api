@@ -10,20 +10,16 @@ import (
   "golang.org/x/crypto/bcrypt"
 )
 
-func Login(userID, email, password string) (models.User, int, error) {
+func Login(email, password string) (models.User, int, error) {
   var user models.User
 
-  err := server.DB.Get(&user, "SELECT * FROM users WHERE id = $1", userID)
+  err := server.DB.Get(&user, "SELECT * FROM users WHERE email = $1", email)
 
   switch {
     case err == sql.ErrNoRows:
       return user, http.StatusUnauthorized, errors.New("account does not exist")
     case err != nil:
       return user, http.StatusInternalServerError, errors.New("unable to login")
-  }
-
-  if email != user.Email {
-    return user, http.StatusBadRequest, errors.New("incorrect email")
   }
 
   err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))

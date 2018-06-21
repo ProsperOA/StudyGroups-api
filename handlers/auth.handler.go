@@ -9,16 +9,15 @@ import (
 )
 
 func Login(c *gin.Context) {
-  userID   := c.PostForm("user_id")
   email    := c.PostForm("email")
   password := c.PostForm("password")
 
-  if userID == "" || email == "" || password == "" {
+  if email == "" || password == "" {
     server.Respond(c, nil, "invalid params", http.StatusBadRequest)
     return
   }
 
-  user, status, err := controllers.Login(userID, email, password)
+  user, status, err := controllers.Login(email, password)
 
   if err != nil {
     server.Respond(c, nil, err.Error(), status)
