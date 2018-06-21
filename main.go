@@ -10,6 +10,12 @@ import (
 )
 
 func main() {
+  var s server.Context
+
+  if err := s.InitServer(); err != nil {
+    panic(err)
+  }
+
   router := gin.Default()
 
   router.GET("/", index)
