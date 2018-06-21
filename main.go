@@ -5,20 +5,20 @@ import (
   "net/http"
 
   "github.com/gin-gonic/gin"
-  // "github.com/prosperoa/study-groups/handlers"
+  "github.com/prosperoa/study-groups/handlers"
   "github.com/prosperoa/study-groups/server"
 )
 
 func main() {
-  var s server.Context
-
-  if err := s.InitServer(); err != nil {
-    panic(err)
+  if err := server.InitServer(); err != nil {
+    log.Fatal(err)
   }
 
   router := gin.Default()
 
   router.GET("/", index)
+
+  router.POST("/login", handlers.Login)
 
   log.Fatal(router.Run(":8080"))
 }
