@@ -18,7 +18,8 @@ func main() {
 
   router.GET("/", index)
 
-  router.POST("/login", handlers.Login)
+  router.POST("/login",  handlers.Login)
+  router.POST("/signup", handlers.Signup)
 
   log.Fatal(router.Run(":8080"))
 }
