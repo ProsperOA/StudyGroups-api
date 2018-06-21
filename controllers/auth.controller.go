@@ -22,8 +22,13 @@ func Login(userID, email, password string) (models.User, int, error) {
       return user, http.StatusInternalServerError, errors.New("unable to login")
   }
 
-  if email != user.Email || password != user.Password {
-    return user, http.StatusUnauthorized, errors.New("invalid email or password")
+  if email != user.Email {
+    return user, http.StatusBadRequest, errors.New("incorrect email")
+  }
+
+  err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+  if err != nil {
+    return user, http.StatusBadRequest, errors.New("incorrect password")
   }
 
   return user, http.StatusOK, nil
