@@ -1,21 +1,21 @@
 package server
 
 import (
-  "database/sql"
   "os"
 
   "github.com/gin-gonic/gin"
+  "github.com/jmoiron/sqlx"
   _ "github.com/lib/pq"
 )
 
-type Context struct {
-  DB *sql.DB
-}
+var (
+  DB *sqlx.DB
+)
 
-func (c *Context) InitServer() error {
+func InitServer() error {
   var err error
 
-  c.DB, err = sql.Open("postgres", os.Getenv("DATABASE_URI"))
+  DB, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URI"))
 
   if err != nil { return err }
 
