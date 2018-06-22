@@ -2,25 +2,24 @@ package handlers
 
 import (
   "net/http"
-  "strings"
 
   "github.com/gin-gonic/gin"
   "github.com/prosperoa/study-groups/controllers"
   "github.com/prosperoa/study-groups/server"
+  "github.com/prosperoa/study-groups/utils"
 )
 
 func Auth() gin.HandlerFunc {
   return func(c *gin.Context) {
-    authHeader := strings.Split(c.GetHeader("Authorization"), " ")
+    authToken, err := utils.GetAuthTokenFromHeader(c.GetHeader("Authorization"))
 
-    if len(authHeader) < 2 {
-      server.Respond(c, nil, "invalid authorization header", http.StatusBadRequest)
+    if err != nil {
+      server.Respond(c, nil, err.Error(), http.StatusBadRequest)
       c.Abort()
       return
     }
 
-    authToken := authHeader[1]
-    err := VerifyAuthToken(authToken)
+    err = VerifyAuthToken(authToken)
 
     if err != nil {
       server.Respond(c, nil, err.Error(), http.StatusUnauthorized)
