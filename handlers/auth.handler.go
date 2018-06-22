@@ -87,5 +87,16 @@ func Signup(c *gin.Context) {
     return
   }
 
-  server.Respond(c, user, "", status)
+  authToken, err := GenerateAuthToken()
+  if err != nil {
+    server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  data := map[string]interface{} {
+    "auth_token": authToken,
+    "user": user,
+  }
+
+  server.Respond(c, data, "", status)
 }
