@@ -5,8 +5,8 @@ import (
   "errors"
   "net/http"
 
-  "github.com/prosperoa/study-groups/models"
-  "github.com/prosperoa/study-groups/server"
+  "github.com/prosperoa/study-groups/src/models"
+  "github.com/prosperoa/study-groups/src/server"
   "golang.org/x/crypto/bcrypt"
 )
 

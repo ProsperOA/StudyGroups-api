@@ -4,9 +4,9 @@ import (
   "net/http"
 
   "github.com/gin-gonic/gin"
-  "github.com/prosperoa/study-groups/controllers"
-  "github.com/prosperoa/study-groups/server"
-  "github.com/prosperoa/study-groups/utils"
+  "github.com/prosperoa/study-groups/src/controllers"
+  "github.com/prosperoa/study-groups/src/server"
+  "github.com/prosperoa/study-groups/src/utils"
 )
 
 func Auth() gin.HandlerFunc {

@@ -5,8 +5,8 @@ import (
   "net/http"
 
   "github.com/gin-gonic/gin"
-  "github.com/prosperoa/study-groups/handlers"
-  "github.com/prosperoa/study-groups/server"
+  "github.com/prosperoa/study-groups/src/handlers"
+  "github.com/prosperoa/study-groups/src/server"
 )
 
 func main() {
