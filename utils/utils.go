@@ -3,6 +3,7 @@ package utils
 import (
   "errors"
   "strings"
+  "unicode"
 )
 
 func GetAuthTokenFromHeader(header string) (string, error) {
@@ -13,4 +14,14 @@ func GetAuthTokenFromHeader(header string) (string, error) {
   }
 
   return authHeader[1], nil
+}
+
+func IsInt(s string) bool {
+  for _, c := range s {
+    if !unicode.IsDigit(c) {
+      return false
+    }
+  }
+
+  return true
 }
