@@ -2,14 +2,13 @@ package handlers
 
 import (
   "errors"
+  "os"
   "time"
 
   "github.com/dgrijalva/jwt-go"
 )
 
-var (
-  signingKey = []byte("secret")
-)
+var signingKey = []byte(os.Getenv("JWT_SIGNING_TOKEN"))
 
 func GenerateAuthToken() (string, error) {
   token := jwt.New(jwt.SigningMethodHS256)
