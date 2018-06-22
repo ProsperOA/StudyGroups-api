@@ -15,13 +15,16 @@ func main() {
   }
 
   router := gin.Default()
-
   router.NoRoute(noRouteFound)
 
-  router.GET("/", index)
+  public := router.Group("/api/v1")
+  public.GET("/", index)
+  public.POST("/login",  handlers.Login)
+  public.POST("/signup", handlers.Signup)
 
-  router.POST("/login",  handlers.Login)
-  router.POST("/signup", handlers.Signup)
+  private := router.Group("/api/v1")
+  private.Use(handlers.Auth())
+  private.GET("/users/:id", handlers.GetUser)
 
   log.Fatal(router.Run(":8080"))
 }
