@@ -49,6 +49,5 @@ func GetUsers(c *gin.Context) {
     return
   }
 
-
   server.Respond(c, users, "", http.StatusOK)
 }
