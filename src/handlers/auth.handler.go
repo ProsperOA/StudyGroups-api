@@ -1,11 +1,13 @@
 package handlers
 
 import (
+  "log"
   "net/http"
 
   "github.com/gin-gonic/gin"
   "github.com/prosperoa/study-groups/src/controllers"
   "github.com/prosperoa/study-groups/src/server"
+  "github.com/prosperoa/study-groups/src/email-notifications"
 )
 
 func Login(c *gin.Context) {
@@ -77,6 +79,10 @@ func Signup(c *gin.Context) {
   data := map[string]interface{} {
     "auth_token": authToken,
     "user": user,
+  }
+
+  if err = emails.NewUserNotification(user.FirstName, user.Email); err != nil {
+    log.Println(err.Error())
   }
 
   server.Respond(c, data, "", status)
