@@ -72,6 +72,11 @@ func Signup(c *gin.Context) {
     return
   }
 
+  if err := server.ValidateEmail(email); err != nil {
+    server.Respond(c, nil, err.Error(), http.StatusBadRequest)
+    return
+  }
+
   if len(password) < 6 || len(password) > 50 {
     server.Respond(c, nil, "password must contain 6 to 50 characters",
       http.StatusBadRequest,

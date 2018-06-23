@@ -1,8 +1,10 @@
 package server
 
 import (
+  "errors"
   "os"
 
+  "github.com/badoux/checkmail"
   "github.com/gin-gonic/gin"
   "github.com/jmoiron/sqlx"
   _ "github.com/lib/pq"
@@ -18,6 +20,25 @@ func InitServer() error {
   DB, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URI"))
 
   if err != nil { return err }
+
+  return nil
+}
+
+func ValidateEmail(email string) (errMsg error) {
+  errMsg = errors.New("invalid email address")
+
+  if err := checkmail.ValidateFormat(email); err != nil {
+    return errMsg
+  }
+
+  if err := checkmail.ValidateHost(email); err != nil {
+    return errMsg
+  }
+
+  err := checkmail.ValidateHost(email)
+  if _, ok := err.(checkmail.SmtpError); ok && err != nil {
+    return errMsg
+  }
 
   return nil
 }
