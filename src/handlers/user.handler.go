@@ -26,7 +26,7 @@ func GetUser(c *gin.Context) {
   }
 
 
-  server.Respond(c, user, "", http.StatusOK)
+  server.Respond(c, user, "", status)
 }
 
 func GetUsers(c *gin.Context) {
@@ -49,7 +49,7 @@ func GetUsers(c *gin.Context) {
     return
   }
 
-  server.Respond(c, users, "", http.StatusOK)
+  server.Respond(c, users, "", status)
 }
 
 func DeleteUser(c *gin.Context) {
