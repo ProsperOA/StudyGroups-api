@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/badoux/checkmail"
+  packages = ["."]
+  revision = "0755fe2dc241caebab64327c352006712f6a55c4"
+
+[[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
@@ -91,6 +97,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ca404ae3924818957b8a60d99cdb76ccc65590969539f74d39641614c9cb33de"
+  inputs-digest = "92a68783b5905f384b5df980d311c20cc15c7dcb0a5cb2b5418fc29af0e2eafc"
   solver-name = "gps-cdcl"
   solver-version = 1
