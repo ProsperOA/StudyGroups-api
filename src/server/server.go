@@ -2,16 +2,20 @@ package server
 
 import (
   "errors"
+  "time"
   "os"
 
   "github.com/badoux/checkmail"
+  "github.com/dgrijalva/jwt-go"
   "github.com/gin-gonic/gin"
   "github.com/jmoiron/sqlx"
   _ "github.com/lib/pq"
 )
 
+
 var (
   DB *sqlx.DB
+  JWTSigningKey = []byte(os.Getenv("JWT_SIGNING_TOKEN"))
 )
 
 func InitServer() error {
@@ -22,6 +26,21 @@ func InitServer() error {
   if err != nil { return err }
 
   return nil
+}
+
+func GenerateAuthToken() (string, error) {
+  token := jwt.New(jwt.SigningMethodHS256)
+
+  token.Claims = jwt.MapClaims{
+    "exp": time.Now().Add(time.Hour * 730).Unix(), // ~ 1 month
+    "iat": time.Now().Unix(),
+  }
+
+  tokenString, err := token.SignedString(JWTSigningKey)
+
+  if err != nil { return tokenString, errors.New("error while signing auth token") }
+
+  return tokenString, nil
 }
 
 func ValidateEmail(email string) (errMsg error) {

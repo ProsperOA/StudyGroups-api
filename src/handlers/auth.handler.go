@@ -6,30 +6,7 @@ import (
   "github.com/gin-gonic/gin"
   "github.com/prosperoa/study-groups/src/controllers"
   "github.com/prosperoa/study-groups/src/server"
-  "github.com/prosperoa/study-groups/src/utils"
 )
-
-func Auth() gin.HandlerFunc {
-  return func(c *gin.Context) {
-    authToken, err := utils.GetAuthTokenFromHeader(c.GetHeader("Authorization"))
-
-    if err != nil {
-      server.Respond(c, nil, err.Error(), http.StatusBadRequest)
-      c.Abort()
-      return
-    }
-
-    err = VerifyAuthToken(authToken)
-
-    if err != nil {
-      server.Respond(c, nil, err.Error(), http.StatusUnauthorized)
-      c.Abort()
-      return
-    }
-
-    c.Next()
-  }
-}
 
 func Login(c *gin.Context) {
   email    := c.PostForm("email")
@@ -47,7 +24,7 @@ func Login(c *gin.Context) {
     return
   }
 
-  authToken, err := GenerateAuthToken()
+  authToken, err := server.GenerateAuthToken()
   if err != nil {
     server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
     return
@@ -91,7 +68,7 @@ func Signup(c *gin.Context) {
     return
   }
 
-  authToken, err := GenerateAuthToken()
+  authToken, err := server.GenerateAuthToken()
   if err != nil {
     server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
     return

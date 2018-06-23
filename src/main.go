@@ -6,6 +6,7 @@ import (
 
   "github.com/gin-gonic/gin"
   "github.com/prosperoa/study-groups/src/handlers"
+  "github.com/prosperoa/study-groups/src/middlewares"
   "github.com/prosperoa/study-groups/src/server"
 )
 
@@ -23,7 +24,7 @@ func main() {
   public.POST("/signup", handlers.Signup)
 
   private := router.Group("/api/v1")
-  private.Use(handlers.Auth())
+  private.Use(middlewares.AuthHandler())
   private.GET(   "/users",     handlers.GetUsers)
   private.GET(   "/users/:id", handlers.GetUser)
   private.DELETE("/users/:id", handlers.DeleteUser)
