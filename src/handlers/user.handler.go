@@ -13,7 +13,7 @@ import (
 func GetUser(c *gin.Context) {
   userID := c.Param("id")
 
-  if userID == "" {
+  if userID == "" || !utils.IsInt(userID) {
     server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
     return
   }
