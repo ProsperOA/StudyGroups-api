@@ -51,3 +51,21 @@ func GetUsers(c *gin.Context) {
 
   server.Respond(c, users, "", http.StatusOK)
 }
+
+func DeleteUser(c *gin.Context) {
+  userID := c.Param("id")
+
+  if userID == "" || !utils.IsInt(userID) {
+    server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+    return
+  }
+
+  status, err := controllers.DeleteUser(userID)
+
+  if err != nil {
+    server.Respond(c, nil, err.Error(), status)
+    return
+  }
+
+  server.Respond(c, nil, "account successfully deleted", status)
+}

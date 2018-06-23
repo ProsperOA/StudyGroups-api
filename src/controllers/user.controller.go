@@ -40,3 +40,17 @@ func GetUsers(page, pageSize int) ([]models.User, int, error) {
 
   return users, http.StatusOK, nil
 }
+
+func DeleteUser(userID string) (int, error) {
+  result, err := server.DB.Exec("DELETE FROM users WHERE id = $1", userID)
+  rowsAffected, _ := result.RowsAffected()
+
+  switch {
+    case rowsAffected == 0:
+      return http.StatusBadRequest, errors.New("account doesn't exist")
+    case err != nil:
+      return http.StatusInternalServerError, errors.New("unable delete account")
+  }
+
+  return http.StatusOK, nil
+}

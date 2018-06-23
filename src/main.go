@@ -24,8 +24,9 @@ func main() {
 
   private := router.Group("/api/v1")
   private.Use(handlers.Auth())
-  private.GET("/users",     handlers.GetUsers)
-  private.GET("/users/:id", handlers.GetUser)
+  private.GET(   "/users",     handlers.GetUsers)
+  private.GET(   "/users/:id", handlers.GetUser)
+  private.DELETE("/users/:id", handlers.DeleteUser)
 
   log.Fatal(router.Run(":8080"))
 }
