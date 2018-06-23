@@ -32,9 +32,9 @@ func main() {
 }
 
 func index(c *gin.Context) {
-  server.Respond(c, nil, "StudyGroups API", http.StatusOK)
+  server.Respond(c, nil, "StudyGroups API v1", http.StatusOK)
 }
 
 func noRouteFound(c *gin.Context) {
-  server.Respond(c, nil, "page not found", http.StatusNotFound)
+  server.Respond(c, nil, "route not found", http.StatusNotFound)
 }
