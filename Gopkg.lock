@@ -8,6 +8,16 @@
   revision = "0755fe2dc241caebab64327c352006712f6a55c4"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/beeker1121/mailchimp-go"
+  packages = [
+    ".",
+    "lists/members",
+    "query"
+  ]
+  revision = "7c5f827423b2a08c0cb05f6a79ea9fec1d2eb257"
+
+[[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
@@ -103,6 +113,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "73699f3344c1a3fa67d4dbd3b0bfb1117fbf7bc43f52a349e570e68d2c617b9e"
+  inputs-digest = "426f8f15b6ca0c214da911de27fd719fc31230beca27474f317de797a0542dcf"
   solver-name = "gps-cdcl"
   solver-version = 1
