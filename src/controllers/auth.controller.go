@@ -3,8 +3,12 @@ package controllers
 import (
   "database/sql"
   "errors"
+  "log"
   "net/http"
+  "os"
 
+  mailchimp "github.com/beeker1121/mailchimp-go"
+  "github.com/beeker1121/mailchimp-go/lists/members"
   "github.com/prosperoa/study-groups/src/models"
   "github.com/prosperoa/study-groups/src/server"
   "golang.org/x/crypto/bcrypt"
@@ -60,6 +64,21 @@ func Signup(firstName, lastName, email, password string) (models.User, int, erro
 
   if err != nil {
     return user, http.StatusInternalServerError, errors.New(errMsg)
+  }
+
+  // add user to mailchimp list
+  if err = mailchimp.SetKey(os.Getenv("MAILCHIMP_API_KEY")); err != nil {
+    log.Println(err.Error())
+  }
+
+  params := &members.NewParams {
+    EmailAddress: user.Email,
+    Status: members.StatusSubscribed,
+  }
+
+  _, err = members.New("4d6392ba4d", params)
+  if err != nil {
+    log.Println(err.Error())
   }
 
   return user, http.StatusOK, nil

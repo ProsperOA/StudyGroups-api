@@ -3,10 +3,7 @@ package handlers
 import (
   "log"
   "net/http"
-  "os"
 
-  mailchimp "github.com/beeker1121/mailchimp-go"
-  "github.com/beeker1121/mailchimp-go/lists/members"
   "github.com/gin-gonic/gin"
   "github.com/prosperoa/study-groups/src/controllers"
   "github.com/prosperoa/study-groups/src/server"
@@ -77,21 +74,6 @@ func Signup(c *gin.Context) {
   if err != nil {
     server.Respond(c, nil, err.Error(), status)
     return
-  }
-
-  // add user to mailchimp list
-  if err = mailchimp.SetKey(os.Getenv("MAILCHIMP_API_KEY")); err != nil {
-    log.Println(err.Error())
-  }
-
-  params := &members.NewParams {
-    EmailAddress: user.Email,
-    Status: members.StatusSubscribed,
-  }
-
-  _, err = members.New("4d6392ba4d", params)
-  if err != nil {
-    log.Println(err.Error())
   }
 
   if err = emails.NewUserNotification(user.FirstName, user.Email); err != nil {
