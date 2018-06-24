@@ -69,3 +69,23 @@ func DeleteStudyGroup(c *gin.Context) {
 
   server.Respond(c, nil, "study group successfully deleted", status)
 }
+
+func LeaveStudyGroup(c *gin.Context) {
+  studyGroupID := c.Param("id")
+  userID := c.PostForm("user_id")
+
+  if studyGroupID == "" || userID == "" ||
+    !utils.IsInt(studyGroupID) || !utils.IsInt(userID) {
+      server.Respond(c, nil, "invalid study group id", http.StatusBadRequest)
+      return
+  }
+
+  status, err := controllers.LeaveStudyGroup(studyGroupID, userID)
+
+  if err != nil {
+    server.Respond(c, nil, err.Error(), status)
+    return
+  }
+
+  server.Respond(c, nil, "user removed from study group", status)
+}

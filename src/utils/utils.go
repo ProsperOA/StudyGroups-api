@@ -25,3 +25,22 @@ func IsInt(s string) bool {
 
   return true
 }
+
+func Splice(s []string, elem string) []string {
+  for i, v := range s {
+    if v == elem {
+      s = append(s[:i], s[i + 1:]...)
+      break
+    }
+  }
+
+  return s
+}
+
+func Contains(s []string, elem string) bool {
+  for _, v := range s {
+    if v == elem { return true }
+  }
+
+  return false
+}
