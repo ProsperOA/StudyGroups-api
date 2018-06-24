@@ -66,6 +66,12 @@ func Signup(c *gin.Context) {
     return
   }
 
+  authToken, err := server.GenerateAuthToken()
+  if err != nil {
+    server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
   user, status, err := controllers.Signup(firstName, lastName, email, password)
 
   if err != nil {
@@ -73,18 +79,11 @@ func Signup(c *gin.Context) {
     return
   }
 
-  authToken, err := server.GenerateAuthToken()
-  if err != nil {
-    server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
-    return
-  }
-
+  // add user to mailchimp list
   if err = mailchimp.SetKey(os.Getenv("MAILCHIMP_API_KEY")); err != nil {
     log.Println(err.Error())
-    server.Respond(c, nil, "unable to sign up", http.StatusInternalServerError)
   }
 
-  // add user to mailchimp list
   params := &members.NewParams {
     EmailAddress: user.Email,
     Status: members.StatusSubscribed,
