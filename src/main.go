@@ -32,6 +32,7 @@ func main() {
   private.GET(   "/study_groups",           handlers.GetStudyGroups)
   private.GET(   "/study_groups/:id",       handlers.GetStudyGroup)
   private.DELETE("/study_groups/:id",       handlers.DeleteStudyGroup)
+  private.PATCH( "/study_groups/:id/join",  handlers.JoinStudyGroup)
   private.PATCH( "/study_groups/:id/leave", handlers.LeaveStudyGroup)
 
   log.Fatal(router.Run(":8080"))

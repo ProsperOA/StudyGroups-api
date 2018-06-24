@@ -52,6 +52,26 @@ func GetStudyGroups(c *gin.Context) {
   server.Respond(c, studyGroups, "", status)
 }
 
+func JoinStudyGroup(c *gin.Context) {
+  studyGroupID := c.Param("id")
+  userID := c.PostForm("user_id")
+
+  if studyGroupID == "" || userID == "" ||
+    !utils.IsInt(studyGroupID) || !utils.IsInt(userID) {
+      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+      return
+  }
+
+  status, err := controllers.JoinStudyGroup(studyGroupID, userID)
+
+  if err != nil {
+    server.Respond(c, nil, err.Error(), status)
+    return
+  }
+
+  server.Respond(c, nil, "user added to study group waitlist", status)
+}
+
 func DeleteStudyGroup(c *gin.Context) {
   id := c.Param("id")
 

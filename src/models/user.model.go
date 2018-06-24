@@ -21,7 +21,28 @@ type User struct {
   Minor       null.String `db:"minor"        json:"minor"`
   Courses     null.String `db:"courses"      json:"courses"`
   StudyGroups null.String `db:"study_groups" json:"-"`
+  Waitlists   null.String `db:"waitlists"    json:"-"`
   Password    string      `db:"password"     json:"-"`
+}
+
+func (u *User) AddStudyGroupToWaitlists(studyGroupID string) error {
+  studyGroups := strings.Split(u.StudyGroups.String, ",")
+  waitlists := strings.Split(u.Waitlists.String, ",")
+
+  if utils.Contains(waitlists, studyGroupID) {
+    return errors.New("user is already waitlisted")
+  } else if utils.Contains(studyGroups, studyGroupID) {
+    return errors.New("user is already in study group")
+  }
+
+  if u.Waitlists.String == "" {
+    u.Waitlists = null.StringFrom(studyGroupID)
+  } else {
+    waitlists = append(waitlists, studyGroupID)
+    u.Waitlists = null.StringFrom(strings.Join(waitlists, ","))
+  }
+
+  return nil
 }
 
 func (u *User) LeaveStudyGroup(studyGroupID string) error {
