@@ -44,6 +44,12 @@
   revision = "0dae4fefe7c0e190f7b5a78dac28a1c82cc8d849"
 
 [[projects]]
+  name = "github.com/jordan-wright/email"
+  packages = ["."]
+  revision = "94ae17dedda217a49e3b47d68f1b54b3c946e16b"
+  version = "v3.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/lib/pq"
   packages = [
@@ -97,6 +103,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "92a68783b5905f384b5df980d311c20cc15c7dcb0a5cb2b5418fc29af0e2eafc"
+  inputs-digest = "73699f3344c1a3fa67d4dbd3b0bfb1117fbf7bc43f52a349e570e68d2c617b9e"
   solver-name = "gps-cdcl"
   solver-version = 1
