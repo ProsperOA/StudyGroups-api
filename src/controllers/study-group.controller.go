@@ -115,16 +115,32 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
       return 0, nil
     }()
 
-    _, err = tx.Exec("UPDATE study_groups SET waitlist = $1, available_spots = $2 WHERE id = $3",
-      studyGroup.Waitlist.String,
-      studyGroup.AvailableSpots,
-      studyGroupID,
-    )
+    if studyGroup.Waitlist.String == "" {
+      _, err = tx.Exec(
+        "UPDATE study_groups SET waitlist = null, available_spots = $1 WHERE id = $2",
+        studyGroup.AvailableSpots,
+        studyGroupID,
+      )
+    } else {
+      _, err = tx.Exec(
+        "UPDATE study_groups SET waitlist = $1, available_spots = $2 WHERE id = $3",
+        studyGroup.Waitlist.String,
+        studyGroup.AvailableSpots,
+        studyGroupID,
+      )
+    }
 
-    _, err = tx.Exec("UPDATE users SET waitlists = $1 WHERE id = $2",
-      user.Waitlists.String,
-      userID,
-    )
+    if user.Waitlists.String == "" {
+      _, err = tx.Exec("UPDATE users SET waitlists = null WHERE id = $1",
+        userID,
+      )
+    } else {
+      _, err = tx.Exec("UPDATE users SET waitlists = $1 WHERE id = $2",
+        user.Waitlists.String,
+        userID,
+      )
+    }
+
 
     err = tx.Commit()
   }
