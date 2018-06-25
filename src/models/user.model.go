@@ -2,6 +2,7 @@ package models
 
 import (
   "errors"
+  "reflect"
   "strings"
 
   "github.com/prosperoa/study-groups/src/utils"
@@ -45,18 +46,37 @@ func (u *User) AddStudyGroupToWaitlists(studyGroupID string) error {
   return nil
 }
 
-func (u *User) LeaveStudyGroup(studyGroupID string) error {
+func (u *User) LeaveStudyGroup(studyGroupID string) (string, null.String, error) {
   studyGroups := strings.Split(u.StudyGroups.String, ",")
+  waitlists := strings.Split(u.Waitlists.String, ",")
 
-  if !utils.Contains(studyGroups, studyGroupID) {
-    return errors.New("user is not a member of study group")
+  if !utils.Contains(studyGroups, studyGroupID) && !utils.Contains(waitlists, studyGroupID) {
+    return "", null.String{}, errors.New("user is not waitlisted or a member of study group")
   }
 
-  if len(studyGroups) > 1 {
-    u.StudyGroups = null.StringFrom(strings.Join(utils.Splice(studyGroups, studyGroupID), ","))
+  var uField *null.String
+  var field *[]string
+  var columnName string
+
+  if utils.Contains(studyGroups, studyGroupID) {
+    uField = &u.StudyGroups
+    field = &studyGroups
+
+    f, _ := reflect.TypeOf(u).Elem().FieldByName("StudyGroups")
+    columnName = f.Tag.Get("db")
   } else {
-    u.StudyGroups = null.String{}
+    uField = &u.Waitlists
+    field = &waitlists
+
+    f, _ := reflect.TypeOf(u).Elem().FieldByName("Waitlists")
+    columnName = f.Tag.Get("db")
   }
 
-  return nil
+  if len(*field) > 1 {
+    *uField = null.StringFrom(strings.Join(utils.Splice(*field, studyGroupID), ","))
+  } else {
+    *uField = null.String{}
+  }
+
+  return columnName, *uField, nil
 }
