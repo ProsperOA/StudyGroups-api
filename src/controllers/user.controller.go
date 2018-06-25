@@ -84,3 +84,24 @@ func DeleteUser(userID string) (int, error) {
 
   return http.StatusOK, nil
 }
+
+func GetUserStudyGroups(userID string, page, pageSize int) ([]models.StudyGroup, int, error) {
+  var studyGroups []models.StudyGroup
+
+  err := server.DB.Select(
+    &studyGroups,
+    "SELECT * FROM study_groups WHERE user_id = $1 LIMIT $2 OFFSET $3",
+    userID,
+    pageSize,
+    pageSize * page,
+  )
+
+  switch {
+    case err == sql.ErrNoRows, len(studyGroups) == 0:
+      return studyGroups, http.StatusNotFound, errors.New("no users study groups found")
+    case err != nil:
+      return studyGroups, http.StatusInternalServerError, errors.New("unable to get user's study groups")
+  }
+
+  return studyGroups, http.StatusOK, nil
+}

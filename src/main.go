@@ -25,9 +25,10 @@ func main() {
 
   private := router.Group("/api/v1")
   private.Use(middlewares.AuthHandler())
-  private.GET(   "/users",     handlers.GetUsers)
-  private.GET(   "/users/:id", handlers.GetUser)
-  private.DELETE("/users/:id", handlers.DeleteUser)
+  private.GET(   "/users",                  handlers.GetUsers)
+  private.GET(   "/users/:id",              handlers.GetUser)
+  private.DELETE("/users/:id",              handlers.DeleteUser)
+  private.GET(   "/users/:id/study_groups", handlers.GetUserStudyGroups)
 
   private.GET(   "/study_groups",           handlers.GetStudyGroups)
   private.GET(   "/study_groups/:id",       handlers.GetStudyGroup)

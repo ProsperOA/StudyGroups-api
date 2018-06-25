@@ -69,3 +69,27 @@ func DeleteUser(c *gin.Context) {
 
   server.Respond(c, nil, "account successfully deleted", status)
 }
+
+func GetUserStudyGroups(c *gin.Context) {
+  userID   := c.Param("id")
+  page     := c.DefaultQuery("page", "0")
+  pageSize := c.DefaultQuery("page_size", "30")
+
+  if userID == "" || page == "" || pageSize == "" ||
+    !utils.IsInt(userID) || !utils.IsInt(page) || !utils.IsInt(pageSize) {
+      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+      return
+  }
+
+  p, _  := strconv.Atoi(page)
+  ps, _ := strconv.Atoi(pageSize)
+
+  studyGroups, status, err := controllers.GetUserStudyGroups(userID, p, ps)
+
+  if err != nil {
+    server.Respond(c, nil, err.Error(), status)
+    return
+  }
+
+  server.Respond(c, studyGroups, "", status)
+}
