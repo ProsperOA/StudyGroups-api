@@ -46,13 +46,15 @@ func GetStudyGroups(page, pageSize int) ([]models.StudyGroup, int, error) {
   return studyGroups, http.StatusOK, nil
 }
 
-func DeleteStudyGroup(id string) (int, error) {
-  result, err := server.DB.Exec("DELETE FROM study_groups WHERE id = $1", id)
+func DeleteStudyGroup(id, userID string) (int, error) {
+  result, err := server.DB.Exec("DELETE FROM study_groups WHERE id = $1 AND user_id = $2",
+    id, userID,
+  )
   rowsAffected, _ := result.RowsAffected()
 
   switch {
     case rowsAffected == 0:
-      return http.StatusBadRequest, errors.New("study group doesn't exist")
+      return http.StatusForbidden, errors.New("user can only delete their own study groups")
     case err != nil:
       return http.StatusInternalServerError, errors.New("unable delete study group")
   }

@@ -74,13 +74,15 @@ func JoinStudyGroup(c *gin.Context) {
 
 func DeleteStudyGroup(c *gin.Context) {
   id := c.Param("id")
+  userID := c.PostForm("user_id")
 
-  if id == "" || !utils.IsInt(id) {
-    server.Respond(c, nil, "invalid study group id", http.StatusBadRequest)
-    return
+  if id == "" || userID == "" ||
+    !utils.IsInt(id) || !utils.IsInt(userID) {
+      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+      return
   }
 
-  status, err := controllers.DeleteStudyGroup(id)
+  status, err := controllers.DeleteStudyGroup(id, userID)
 
   if err != nil {
     server.Respond(c, nil, err.Error(), status)
