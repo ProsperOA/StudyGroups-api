@@ -3,14 +3,22 @@ package controllers
 import (
   "database/sql"
   "errors"
+  "fmt"
   "log"
+  "mime/multipart"
   "net/http"
+  "strings"
   "os"
 
+  "github.com/aws/aws-sdk-go/aws"
+  "github.com/aws/aws-sdk-go/service/s3"
+  "github.com/aws/aws-sdk-go/service/s3/s3manager"
   mailchimp "github.com/beeker1121/mailchimp-go"
   "github.com/beeker1121/mailchimp-go/lists/members"
   "github.com/prosperoa/study-groups/src/models"
   "github.com/prosperoa/study-groups/src/server"
+  "github.com/prosperoa/study-groups/src/utils"
+  "gopkg.in/guregu/null.v3"
 )
 
 func GetUser(userID string) (models.User, int, error) {
@@ -104,4 +112,59 @@ func GetUserStudyGroups(userID string, page, pageSize int) ([]models.StudyGroup,
   }
 
   return studyGroups, http.StatusOK, nil
+}
+
+func UploadAvatar(userID, ext string, image multipart.File) (string, int, error) {
+  var avatarURL null.String
+  errMsg := errors.New("unable to upload avatar")
+
+  err := server.DB.Get(&avatarURL, "SELECT avatar FROM users WHERE id = $1", userID)
+
+  switch {
+    case err == sql.ErrNoRows:
+      return avatarURL.String, http.StatusNotFound, errors.New("user not found")
+    case err != nil:
+      return avatarURL.String, http.StatusInternalServerError, errMsg
+  }
+
+  // delete old avatar
+  if avatarURL.String != "" && !strings.Contains(avatarURL.String, "stock-avatar") {
+    _, err = server.S3Service.DeleteObject(&s3.DeleteObjectInput{
+      Bucket: aws.String(server.S3Bucket),
+      Key:    aws.String(strings.TrimPrefix(avatarURL.String, server.S3BucketURL)),
+    })
+
+    if err != nil {
+      return avatarURL.String, http.StatusInternalServerError, errMsg
+    }
+  }
+
+  newAvatarFilename := fmt.Sprintf("%s-%s", userID, utils.RandString(16) + ext)
+
+  result, err := server.S3Uploader.Upload(&s3manager.UploadInput{
+    Body:   image,
+    Bucket: aws.String(server.S3Bucket),
+    Key:    aws.String("images/user-avatars/" + newAvatarFilename),
+    ACL:    aws.String("public-read"),
+  })
+
+  if err != nil {
+    return avatarURL.String, http.StatusInternalServerError, errMsg
+  }
+
+  res, err := server.DB.Exec("UPDATE users SET avatar = $1 WHERE id = $2",
+    result.Location,
+    userID,
+  )
+
+  rowsAffected, _ := res.RowsAffected()
+
+  switch {
+    case rowsAffected == 0:
+      return avatarURL.String, http.StatusInternalServerError, errMsg
+    case err != nil:
+      return avatarURL.String, http.StatusInternalServerError, errMsg
+  }
+
+  return result.Location, http.StatusOK, nil
 }

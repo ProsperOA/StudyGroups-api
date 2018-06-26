@@ -2,9 +2,14 @@ package server
 
 import (
   "errors"
-  "time"
   "os"
+  "time"
 
+  "github.com/aws/aws-sdk-go/aws"
+  "github.com/aws/aws-sdk-go/aws/credentials"
+  "github.com/aws/aws-sdk-go/aws/session"
+  "github.com/aws/aws-sdk-go/service/s3"
+  "github.com/aws/aws-sdk-go/service/s3/s3manager"
   "github.com/badoux/checkmail"
   "github.com/dgrijalva/jwt-go"
   "github.com/gin-gonic/gin"
@@ -14,16 +19,48 @@ import (
 
 
 var (
-  DB *sqlx.DB
+  DB         *sqlx.DB
+  S3Uploader *s3manager.Uploader
+  S3Service  *s3.S3
+
   JWTSigningKey = []byte(os.Getenv("JWT_SIGNING_TOKEN"))
+)
+
+const (
+  AWSRegion   = "us-west-1"
+  S3Bucket    = "study-groups"
+  S3BucketURL = "https://s3-us-west-1.amazonaws.com/study-groups/"
 )
 
 func InitServer() error {
   var err error
 
   DB, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URI"))
-
   if err != nil { return err }
+
+  sess, err := session.NewSession(&aws.Config{
+    Credentials: credentials.NewStaticCredentials(
+      os.Getenv("AWS_AKID"),
+      os.Getenv("AWS_SECRET"),
+      "",
+    ),
+    Region: aws.String(AWSRegion),
+  })
+  if err != nil { return err }
+
+  S3Uploader = s3manager.NewUploader(sess)
+
+  sess, err = session.NewSession(&aws.Config{
+    Credentials: credentials.NewStaticCredentials(
+      os.Getenv("AWS_AKID"),
+      os.Getenv("AWS_SECRET"),
+      "",
+    ),
+    Region: aws.String(AWSRegion),
+  })
+  if err != nil { return err }
+
+  S3Service = s3.New(sess)
 
   return nil
 }

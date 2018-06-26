@@ -28,6 +28,7 @@ func main() {
   private.GET(   "/users",                  handlers.GetUsers)
   private.GET(   "/users/:id",              handlers.GetUser)
   private.DELETE("/users/:id",              handlers.DeleteUser)
+  private.POST(  "/users/:id/avatar",       handlers.UploadAvatar)
   private.GET(   "/users/:id/study_groups", handlers.GetUserStudyGroups)
 
   private.GET(   "/study_groups",           handlers.GetStudyGroups)

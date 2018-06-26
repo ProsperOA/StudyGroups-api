@@ -2,6 +2,7 @@ package handlers
 
 import (
   "net/http"
+  "path/filepath"
   "strconv"
 
   "github.com/gin-gonic/gin"
@@ -92,4 +93,34 @@ func GetUserStudyGroups(c *gin.Context) {
   }
 
   server.Respond(c, studyGroups, "", status)
+}
+
+func UploadAvatar(c *gin.Context) {
+  userID := c.Param("id")
+  file, err := c.FormFile("image")
+
+  if userID == "" ||  !utils.IsInt(userID) {
+    server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+    return
+  }
+
+  if err != nil {
+    server.Respond(c, nil, "unable to get image", http.StatusBadRequest)
+    return
+  }
+
+  if file.Size / utils.MB > utils.MB * 2 {
+    server.Respond(c, nil, "image size must be 2MB or less", http.StatusBadRequest)
+    return
+  }
+
+  ext := filepath.Ext(file.Filename)
+  image, _ := file.Open()
+  avatarURL, status, err := controllers.UploadAvatar(userID, ext, image)
+
+  if err != nil {
+    server.Respond(c, nil, err.Error(), status)
+  }
+
+  server.Respond(c, avatarURL, "", status)
 }
