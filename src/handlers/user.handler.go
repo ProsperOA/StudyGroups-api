@@ -4,6 +4,7 @@ import (
   "net/http"
   "path/filepath"
   "strconv"
+  "strings"
 
   "github.com/gin-gonic/gin"
   "github.com/prosperoa/study-groups/src/controllers"
@@ -123,4 +124,31 @@ func UploadAvatar(c *gin.Context) {
   }
 
   server.Respond(c, avatarURL, "", status)
+}
+
+func ChangePassword(c *gin.Context) {
+  userID := c.Param("id")
+  desiredPassword := c.PostForm("new_password")
+  currentPassword := c.PostForm("current_password")
+
+  desiredPassword = strings.Replace(desiredPassword, " ", "", -1)
+  currentPassword = strings.Replace(currentPassword, " ", "", -1)
+
+  if userID == "" || !utils.IsInt(userID) ||
+    desiredPassword == "" || currentPassword == "" {
+      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+  }
+
+  if len(desiredPassword) < 6 {
+    server.Respond(c, nil, "new password must be at least 6 characters", http.StatusBadRequest)
+  }
+
+  user, status, err := controllers.ChangePassword(userID, currentPassword, desiredPassword)
+
+  if err != nil {
+    server.Respond(c, nil, err.Error(), status)
+    return
+  }
+
+  server.Respond(c, user, "", status)
 }

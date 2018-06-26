@@ -18,6 +18,7 @@ import (
   "github.com/prosperoa/study-groups/src/models"
   "github.com/prosperoa/study-groups/src/server"
   "github.com/prosperoa/study-groups/src/utils"
+  "golang.org/x/crypto/bcrypt"
   "gopkg.in/guregu/null.v3"
 )
 
@@ -167,4 +168,28 @@ func UploadAvatar(userID, ext string, image multipart.File) (string, int, error)
   }
 
   return result.Location, http.StatusOK, nil
+}
+
+func ChangePassword(userID, currentPassword, desiredPassword string) (models.User, int, error) {
+  var user models.User
+  var currentPasswordHash string
+  errMsg := errors.New("unable to change password")
+
+  err := server.DB.Get(&currentPasswordHash, "SELECT password FROM users WHERE id = $1",
+    userID,
+  )
+  if err != nil { return user, http.StatusInternalServerError, errMsg }
+
+  err = bcrypt.CompareHashAndPassword([]byte(currentPasswordHash), []byte(currentPassword))
+  if err != nil { return user, http.StatusBadRequest, errors.New("incorrect password") }
+
+  newPasswordHash, err  := bcrypt.GenerateFromPassword([]byte(desiredPassword), 6)
+  if err != nil { return user, http.StatusInternalServerError, errMsg }
+
+  err = server.DB.Get(&user, "UPDATE users SET password = $1 WHERE id = $2 RETURNING *",
+    newPasswordHash, userID,
+  )
+  if err != nil { return user, http.StatusInternalServerError, errMsg }
+
+  return user, http.StatusOK, nil
 }
