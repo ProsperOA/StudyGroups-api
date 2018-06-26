@@ -35,7 +35,7 @@ const (
 func InitServer() error {
   var err error
 
-  DB, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URI"))
+  DB, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
   if err != nil { return err }
 
   sess, err := session.NewSession(&aws.Config{
