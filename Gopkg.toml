@@ -1,5 +1,5 @@
 [metadata.heroku]
-  root-package = "github.com/prosperoa/study-groups"
+  root-package = "github.com/prosperoa/study-groups/src"
 
 [[constraint]]
   name = "github.com/gin-gonic/gin"
