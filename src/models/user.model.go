@@ -24,6 +24,8 @@ type User struct {
   StudyGroups null.String `db:"study_groups" json:"-"`
   Waitlists   null.String `db:"waitlists"    json:"-"`
   Password    string      `db:"password"     json:"-"`
+  CreatedOn   string      `db:"created_on"   json:"-"`
+  UpdatedOn   string      `db:"updated_on"   json:"-"`
 }
 
 func (u *User) AddStudyGroupToWaitlists(studyGroupID string) error {
