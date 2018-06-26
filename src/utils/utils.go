@@ -2,9 +2,22 @@ package utils
 
 import (
   "errors"
+  "math/rand"
   "strings"
+  "time"
   "unicode"
 )
+
+const (
+  KB int64 = 1 << (10 * iota)
+  MB
+)
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func init() {
+  rand.Seed(time.Now().UnixNano())
+}
 
 func GetAuthTokenFromHeader(header string) (string, error) {
   authHeader := strings.Split(header, " ")
@@ -43,4 +56,14 @@ func Contains(s []string, elem string) bool {
   }
 
   return false
+}
+
+func RandString(n int) string {
+  b := make([]rune, n)
+
+  for i := range b {
+    b[i] = letterRunes[rand.Intn(len(letterRunes))]
+  }
+
+  return string(b)
 }
