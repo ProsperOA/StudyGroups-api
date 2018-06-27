@@ -3,6 +3,7 @@ package utils
 import (
   "errors"
   "math/rand"
+  "regexp"
   "strings"
   "time"
   "unicode"
@@ -66,4 +67,14 @@ func RandString(n int) string {
   }
 
   return string(b)
+}
+
+func Trim(s string) string {
+  re_leadclose_whtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
+  re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
+
+  trimmedStr := re_leadclose_whtsp.ReplaceAllString(s, "")
+  trimmedStr = re_inside_whtsp.ReplaceAllString(trimmedStr, " ")
+
+  return trimmedStr
 }
