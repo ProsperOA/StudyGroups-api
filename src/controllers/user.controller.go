@@ -7,8 +7,9 @@ import (
   "log"
   "mime/multipart"
   "net/http"
-  "strings"
   "os"
+  "strings"
+  "time"
 
   "github.com/aws/aws-sdk-go/aws"
   "github.com/aws/aws-sdk-go/service/s3"
@@ -168,6 +169,42 @@ func UploadAvatar(userID, ext string, image multipart.File) (string, int, error)
   }
 
   return result.Location, http.StatusOK, nil
+}
+
+func UpdateAccount(userID, firstName, lastName, bio, school, major1, major2,
+  minor string) (models.User, int, error) {
+  var user models.User
+
+  err := server.DB.Get(&user,
+   `UPDATE users
+    SET
+      first_name = $1,
+      last_name  = $2,
+      bio        = $3,
+      school     = $4,
+      major1     = $5,
+      major2     = $6,
+      minor      = $7,
+      updated_on = $8
+    WHERE id = $9
+    RETURNING *`,
+    firstName,
+    null.NewString(lastName, lastName != ""),
+    null.NewString(bio, bio != ""),
+    null.NewString(school, school != ""),
+    null.NewString(major1, major1 != ""),
+    null.NewString(major2, major2 != ""),
+    null.NewString(minor, minor != ""),
+    time.Now(),
+    userID,
+  )
+
+  if  err != nil {
+    log.Println(err.Error())
+    return user, http.StatusInternalServerError, errors.New("unable to update account")
+  }
+
+  return user, http.StatusOK, nil
 }
 
 func ChangePassword(userID, currentPassword, desiredPassword string) (models.User, int, error) {
