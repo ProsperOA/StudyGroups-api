@@ -12,7 +12,7 @@ import (
 
 var (
   newUserTpl = template.Must(template.New("new-user.html").ParseFiles(
-    "email-notifications/templates/new-user.html",
+    "./email-notifications/templates/new-user.html",
   ))
 )
 
