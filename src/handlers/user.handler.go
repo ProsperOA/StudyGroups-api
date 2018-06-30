@@ -1,187 +1,194 @@
 package handlers
 
 import (
-  "net/http"
-  "path/filepath"
-  "strconv"
-  "strings"
+	"net/http"
+	"path/filepath"
+	"reflect"
+	"strconv"
 
-  "github.com/gin-gonic/gin"
-  "github.com/prosperoa/study-groups/src/controllers"
-  "github.com/prosperoa/study-groups/src/server"
-  "github.com/prosperoa/study-groups/src/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/prosperoa/study-groups/src/controllers"
+	"github.com/prosperoa/study-groups/src/models"
+	"github.com/prosperoa/study-groups/src/server"
+	"github.com/prosperoa/study-groups/src/utils"
 )
 
 func GetUser(c *gin.Context) {
-  userID := c.Param("id")
+	userID := c.Param("id")
 
-  if userID == "" || !utils.IsInt(userID) {
-    server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
-    return
-  }
+	if !utils.IsInt(userID) {
+		server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+		return
+	}
 
-  user, status, err := controllers.GetUser(userID)
+	user, status, err := controllers.GetUser(userID)
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-
-  server.Respond(c, user, "", status)
+	server.Respond(c, user, "", status)
 }
 
 func GetUsers(c *gin.Context) {
-  page     := c.DefaultQuery("page", "0")
-  pageSize := c.DefaultQuery("page_size", "30")
+	page := c.DefaultQuery("page", "0")
+	pageSize := c.DefaultQuery("page_size", "30")
 
-  if page == "" || pageSize == "" ||
-    !utils.IsInt(page) || !utils.IsInt(pageSize) {
-      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
-      return
-  }
+	if !utils.IsInt(page) || !utils.IsInt(pageSize) {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
 
-  p, _  := strconv.Atoi(page)
-  ps, _ := strconv.Atoi(pageSize)
+	p, _ := strconv.Atoi(page)
+	ps, _ := strconv.Atoi(pageSize)
 
-  users, status, err := controllers.GetUsers(p, ps)
+	users, status, err := controllers.GetUsers(p, ps)
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-  server.Respond(c, users, "", status)
+	server.Respond(c, users, "", status)
 }
 
 func DeleteUser(c *gin.Context) {
-  userID := c.Param("id")
+	userID := c.Param("id")
 
-  if userID == "" || !utils.IsInt(userID) {
-    server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
-    return
-  }
+	if !utils.IsInt(userID) {
+		server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+		return
+	}
 
-  status, err := controllers.DeleteUser(userID)
+	status, err := controllers.DeleteUser(userID)
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-  server.Respond(c, nil, "account successfully deleted", status)
+	server.Respond(c, nil, "account successfully deleted", status)
 }
 
 func GetUserStudyGroups(c *gin.Context) {
-  userID   := c.Param("id")
-  page     := c.DefaultQuery("page", "0")
-  pageSize := c.DefaultQuery("page_size", "30")
+	userID := c.Param("id")
+	page := c.DefaultQuery("page", "0")
+	pageSize := c.DefaultQuery("page_size", "30")
 
-  if userID == "" || page == "" || pageSize == "" ||
-    !utils.IsInt(userID) || !utils.IsInt(page) || !utils.IsInt(pageSize) {
-      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
-      return
-  }
+	if !utils.IsInt(userID) || !utils.IsInt(page) || !utils.IsInt(pageSize) {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
 
-  p, _  := strconv.Atoi(page)
-  ps, _ := strconv.Atoi(pageSize)
+	p, _ := strconv.Atoi(page)
+	ps, _ := strconv.Atoi(pageSize)
 
-  studyGroups, status, err := controllers.GetUserStudyGroups(userID, p, ps)
+	studyGroups, status, err := controllers.GetUserStudyGroups(userID, p, ps)
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-  server.Respond(c, studyGroups, "", status)
+	server.Respond(c, studyGroups, "", status)
 }
 
 func UploadAvatar(c *gin.Context) {
-  userID := c.Param("id")
-  file, err := c.FormFile("image")
+	userID := c.Param("id")
+	file, err := c.FormFile("image")
 
-  if userID == "" ||  !utils.IsInt(userID) {
-    server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
-    return
-  }
+	if !utils.IsInt(userID) {
+		server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+		return
+	}
 
-  if err != nil {
-    server.Respond(c, nil, "unable to get image", http.StatusBadRequest)
-    return
-  }
+	if err != nil {
+		server.Respond(c, nil, "unable to get image", http.StatusBadRequest)
+		return
+	}
 
-  if file.Size / utils.MB > utils.MB * 2 {
-    server.Respond(c, nil, "image size must be 2MB or less", http.StatusBadRequest)
-    return
-  }
+	if file.Size/utils.MB > utils.MB*2 {
+		server.Respond(c, nil, "image size must be 2MB or less", http.StatusBadRequest)
+		return
+	}
 
-  ext := filepath.Ext(file.Filename)
-  image, _ := file.Open()
-  avatarURL, status, err := controllers.UploadAvatar(userID, ext, image)
+	ext := filepath.Ext(file.Filename)
+	image, _ := file.Open()
+	avatarURL, status, err := controllers.UploadAvatar(userID, ext, image)
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-  server.Respond(c, avatarURL, "", status)
+	server.Respond(c, avatarURL, "", status)
 }
 
 func UpdateAccount(c *gin.Context) {
-  userID    := c.Param("id")
-  firstName := utils.Trim(c.PostForm("first_name"))
-  lastName  := utils.Trim(c.PostForm("last_name"))
-  bio       := utils.Trim(c.PostForm("bio"))
-  school    := utils.Trim(c.PostForm("school"))
-  major1    := utils.Trim(c.PostForm("major1"))
-  major2    := utils.Trim(c.PostForm("major2"))
-  minor     := utils.Trim(c.PostForm("minor"))
+	var account models.Account
+	userID := c.Param("id")
 
-  if userID == "" || firstName == "" || !utils.IsInt(userID) ||
-    len(firstName) > 20  ||
-    len(lastName)  > 20  ||
-    len(bio)       > 280 ||
-    len(school)    > 20  ||
-    len(major1)    > 40  ||
-    len(major2)    > 40  ||
-    len(minor)     > 40 {
-      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
-      return
-  }
+	if err := c.ShouldBindWith(&account, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing params", http.StatusBadRequest)
+		return
+	}
 
-  user, status, err := controllers.UpdateAccount(userID, firstName, lastName, bio,
-    school, major1, major2, minor)
+	valuesPtr := reflect.ValueOf(&account)
+	values := valuesPtr.Elem()
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	for i := 0; i < values.NumField(); i++ {
+		field := values.Field(i)
+		if field.Interface() != "string" {
+			continue
+		}
 
-  server.Respond(c, user, "", status)
+		str := field.Interface().(string)
+		field.SetString(utils.Trim(str))
+	}
+
+	if err := server.Validate.Struct(account); err != nil || !utils.IsInt(userID) {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
+
+	user, status, err := controllers.UpdateAccount(userID, account)
+
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
+
+	server.Respond(c, user, "", status)
 }
 
 func ChangePassword(c *gin.Context) {
-  userID := c.Param("id")
-  desiredPassword := c.PostForm("new_password")
-  currentPassword := c.PostForm("current_password")
+	var passwords models.ChangePassword
+	userID := c.Param("id")
 
-  desiredPassword = strings.Replace(desiredPassword, " ", "", -1)
-  currentPassword = strings.Replace(currentPassword, " ", "", -1)
+	if err := c.ShouldBindWith(&passwords, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing params", http.StatusBadRequest)
+		return
+	}
 
-  if userID == "" || !utils.IsInt(userID) ||
-    desiredPassword == "" || currentPassword == "" {
-      server.Respond(c, nil, "invalid params", http.StatusBadRequest)
-  }
+	if err := server.Validate.Struct(passwords); err != nil || !utils.IsInt(userID) {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
 
-  if len(desiredPassword) < 6 {
-    server.Respond(c, nil, "new password must be at least 6 characters", http.StatusBadRequest)
-  }
+	err := server.Validate.VarWithValue(passwords.New, passwords.Confirm, "eqfield")
+	if err != nil {
+		server.Respond(c, nil, "passwords must match", http.StatusBadRequest)
+		return
+	}
 
-  user, status, err := controllers.ChangePassword(userID, currentPassword, desiredPassword)
+	user, status, err := controllers.ChangePassword(userID, passwords)
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-  server.Respond(c, user, "", status)
+	server.Respond(c, user, "", status)
 }

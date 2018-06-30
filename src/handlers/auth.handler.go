@@ -1,89 +1,98 @@
 package handlers
 
 import (
-  "log"
-  "net/http"
+	"log"
+	"net/http"
 
-  "github.com/gin-gonic/gin"
-  "github.com/prosperoa/study-groups/src/controllers"
-  "github.com/prosperoa/study-groups/src/server"
-  "github.com/prosperoa/study-groups/src/email-notifications"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/prosperoa/study-groups/src/controllers"
+	"github.com/prosperoa/study-groups/src/email-notifications"
+	"github.com/prosperoa/study-groups/src/models"
+	"github.com/prosperoa/study-groups/src/server"
 )
 
 func Login(c *gin.Context) {
-  email    := c.PostForm("email")
-  password := c.PostForm("password")
+	var credentials models.LoginCredentials
 
-  if email == "" || password == "" {
-    server.Respond(c, nil, "invalid params", http.StatusBadRequest)
-    return
-  }
+	if err := c.ShouldBindWith(&credentials, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing params", http.StatusBadRequest)
+		return
+	}
 
-  user, status, err := controllers.Login(email, password)
+	if err := server.Validate.Struct(credentials); err != nil {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	user, status, err := controllers.Login(credentials)
 
-  authToken, err := server.GenerateAuthToken()
-  if err != nil {
-    server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
-    return
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-  data := map[string]interface{} {
-    "auth_token": authToken,
-    "user": user,
-  }
+	authToken, err := server.GenerateAuthToken()
+	if err != nil {
+		server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-  server.Respond(c, data, "", status)
+	data := map[string]interface{}{
+		"auth_token": authToken,
+		"user":       user,
+	}
+
+	server.Respond(c, data, "", status)
 }
 
 func Signup(c *gin.Context) {
-  firstName := c.Query("first_name")
-  lastName  := c.Query("last_name")
-  email     := c.Query("email")
-  password  := c.Query("password")
+	var credentials models.SignUpCredentials
 
-  if firstName == "" ||  email == "" || password == "" {
-    server.Respond(c, nil, "invalid params", http.StatusBadRequest)
-    return
-  }
+	if err := c.ShouldBindWith(&credentials, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing params", http.StatusBadRequest)
+		return
+	}
 
-  if err := server.ValidateEmail(email); err != nil {
-    server.Respond(c, nil, err.Error(), http.StatusBadRequest)
-    return
-  }
+	if err := server.Validate.Struct(credentials); err != nil {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
 
-  if len(password) < 6 || len(password) > 50 {
-    server.Respond(c, nil, "password must contain 6 to 50 characters",
-      http.StatusBadRequest,
-    )
-    return
-  }
+	err := server.Validate.VarWithValue(credentials.Password,
+		credentials.ConfirmPassword, "eqfield",
+	)
+	if err != nil {
+		server.Respond(c, nil, "passwords must match", http.StatusBadRequest)
+		return
+	}
 
-  authToken, err := server.GenerateAuthToken()
-  if err != nil {
-    server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
-    return
-  }
+	if err := server.ValidateEmail(credentials.Email); err != nil {
+		server.Respond(c, nil, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-  user, status, err := controllers.Signup(firstName, lastName, email, password)
+	authToken, err := server.GenerateAuthToken()
+	if err != nil {
+		server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-  if err != nil {
-    server.Respond(c, nil, err.Error(), status)
-    return
-  }
+	user, status, err := controllers.Signup(credentials)
 
-  if err = emails.NewUserNotification(user.FirstName, user.Email); err != nil {
-    log.Println(err.Error())
-  }
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
 
-  data := map[string]interface{} {
-    "auth_token": authToken,
-    "user": user,
-  }
+	if err = emails.NewUserNotification(user.FirstName, user.Email); err != nil {
+		log.Println(err.Error())
+	}
 
-  server.Respond(c, data, "", status)
+	data := map[string]interface{}{
+		"auth_token": authToken,
+		"user":       user,
+	}
+
+	server.Respond(c, data, "", status)
 }
