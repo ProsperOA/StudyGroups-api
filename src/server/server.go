@@ -30,7 +30,7 @@ var (
 const (
 	AWSRegion   = "us-west-1"
 	S3Bucket    = "study-groups"
-	S3BucketURL = "https://s3-us-west-1.amazonaws.com/study-groups/"
+	S3BucketURL = "https://study-groups.s3.us-west-1.amazonaws.com/"
 )
 
 func InitServer() error {
