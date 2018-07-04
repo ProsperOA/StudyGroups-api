@@ -130,7 +130,7 @@ func UploadAvatar(userID, ext string, image multipart.File) (string, int, error)
 	}
 
 	// delete old avatar
-	if avatarURL.String != "" && !strings.Contains(avatarURL.String, "stock-avatar") {
+	if !strings.Contains(avatarURL.String, "stock-avatar") {
 		_, err = server.S3Service.DeleteObject(&s3.DeleteObjectInput{
 			Bucket: aws.String(server.S3Bucket),
 			Key:    aws.String(strings.TrimPrefix(avatarURL.String, server.S3BucketURL)),
