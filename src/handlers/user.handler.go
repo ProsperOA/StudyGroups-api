@@ -55,14 +55,15 @@ func GetUsers(c *gin.Context) {
 }
 
 func DeleteUser(c *gin.Context) {
+	var password models.Password
 	userID := c.Param("id")
 
-	if !utils.IsInt(userID) {
-		server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+	if err := c.ShouldBindWith(&password, binding.JSON); err != nil || !utils.IsInt(userID) {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
 		return
 	}
 
-	status, err := controllers.DeleteUser(userID)
+	status, err := controllers.DeleteUser(userID, password.Value)
 
 	if err != nil {
 		server.Respond(c, nil, err.Error(), status)

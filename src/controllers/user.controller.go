@@ -55,16 +55,40 @@ func GetUsers(page, pageSize int) ([]models.User, int, error) {
 	return users, http.StatusOK, nil
 }
 
-func DeleteUser(userID string) (int, error) {
-	var userEmail string
+func DeleteUser(userID, password string) (int, error) {
+	var passwordHash string
 
-	err := server.DB.Get(&userEmail, "DELETE FROM users WHERE id = $1 RETURNING email", userID)
+	err := server.DB.Get(&passwordHash, "SELECT password FROM users WHERE id = $1", userID)
 
-	switch {
-	case err == sql.ErrNoRows:
+	if err != nil {
 		return http.StatusBadRequest, errors.New("account doesn't exist")
-	case err != nil:
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
+	if err != nil {
+		return http.StatusBadRequest, errors.New("incorrect password")
+	}
+
+	var user models.User
+
+	err = server.DB.Get(
+		&user,
+		"DELETE FROM users WHERE id = $1 RETURNING email, avatar",
+		userID,
+	)
+
+	if err != nil {
 		return http.StatusInternalServerError, errors.New("unable delete account")
+	}
+
+	// delete avatar
+	if !strings.Contains(user.Avatar.String, "stock-avatar") {
+		_, err = server.S3Service.DeleteObject(&s3.DeleteObjectInput{
+			Bucket: aws.String(server.S3Bucket),
+			Key:    aws.String(strings.TrimPrefix(user.Avatar.String, server.S3BucketURL)),
+		})
+
+		if err != nil { log.Println(err.Error()) }
 	}
 
 	// remove user from mailchimp list
@@ -73,20 +97,18 @@ func DeleteUser(userID string) (int, error) {
 	params := &members.GetParams{Status: members.StatusSubscribed}
 	listMembers, err := members.Get("4d6392ba4d", params)
 
-	if err != nil {
+	if err == nil {
 		for _, v := range listMembers.Members {
-			if v.EmailAddress == userEmail {
+			if v.EmailAddress == user.Email {
 				mailchimpID = v.ID
 				break
 			}
 		}
 
-		if err = mailchimp.SetKey(os.Getenv("MAILCHIMP_API_KEY")); err != nil {
-			log.Println(err.Error())
-		}
-
-		if err = members.Delete("4d6392ba4d", mailchimpID); err != nil {
-			log.Println(err.Error())
+		if err = mailchimp.SetKey(os.Getenv("MAILCHIMP_API_KEY")); err == nil {
+			if err = members.Delete("4d6392ba4d", mailchimpID); err != nil {
+				log.Println(err.Error())
+			}
 		}
 	} else {
 		log.Println(err.Error())
