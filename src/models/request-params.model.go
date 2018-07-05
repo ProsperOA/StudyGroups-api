@@ -28,6 +28,10 @@ type Account struct {
 	Minor     string `json:"minor"      validate:"max=40"`
 }
 
+type Password struct {
+	Value string `json:"password" validate:"required,min=6,max=50"`
+}
+
 type ChangePassword struct {
 	New     string `json:"new_password"     validate:"required,min=6,max=50,excludesall= "`
 	Confirm string `json:"confirm_password" validate:"required,min=6,max=50,excludesall= "`
