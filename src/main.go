@@ -29,6 +29,7 @@ func main() {
   private.GET(   "/users/:id",              handlers.GetUser)
   private.PATCH( "/users/:id/account",      handlers.UpdateAccount)
   private.POST(  "/users/:id/avatar",       handlers.UploadAvatar)
+  private.PUT(   "/users/:id/courses",      handlers.UpdateCourses)
   private.POST(  "/users/:id/delete",       handlers.DeleteUser)
   private.PATCH( "/users/:id/password",     handlers.ChangePassword)
   private.GET(   "/users/:id/study_groups", handlers.GetUserStudyGroups)

@@ -259,3 +259,16 @@ func ChangePassword(userID string, passwords models.ChangePassword) (models.User
 
 	return user, http.StatusOK, nil
 }
+
+func UpdateCourses (userID string, courses []byte) (int, error) {
+	_, err := server.DB.Exec("UPDATE users SET courses = $1 WHERE id = $2",
+		courses, userID,
+	)
+
+	if err != nil {
+		log.Println(err.Error())
+		return http.StatusInternalServerError, errors.New("unable to update courses")
+	}
+
+	return http.StatusOK, nil
+}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -192,4 +193,29 @@ func ChangePassword(c *gin.Context) {
 	}
 
 	server.Respond(c, user, "", status)
+}
+
+func UpdateCourses (c *gin.Context) {
+	var courses []models.Course
+	userID := c.Param("id")
+
+	if err := c.ShouldBindWith(&courses, binding.JSON); err != nil || !utils.IsInt(userID) {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
+
+	coursesB, err := json.Marshal(courses)
+	if err != nil {
+		server.Respond(c, nil, "invalid courses format", http.StatusBadRequest)
+		return
+	}
+
+	status, err := controllers.UpdateCourses(userID, coursesB)
+
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
+
+	server.Respond(c, nil, "courses successfully updated", status)
 }
