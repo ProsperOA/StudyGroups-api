@@ -5,27 +5,28 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/jmoiron/sqlx/types"
 	"github.com/prosperoa/study-groups/src/utils"
 	"gopkg.in/guregu/null.v3"
 )
 
 type User struct {
-	ID          int         `db:"id"           json:"id"`
-	FirstName   string      `db:"first_name"   json:"first_name"`
-	LastName    null.String `db:"last_name"    json:"last_name"`
-	Email       string      `db:"email"        json:"email"`
-	Avatar      null.String `db:"avatar"       json:"avatar"`
-	Bio         null.String `db:"bio"          json:"bio"`
-	School      null.String `db:"school"       json:"school"`
-	Major1      null.String `db:"major1"       json:"major1"`
-	Major2      null.String `db:"major2"       json:"major2"`
-	Minor       null.String `db:"minor"        json:"minor"`
-	Courses     null.String `db:"courses"      json:"courses"`
-	StudyGroups null.String `db:"study_groups" json:"-"`
-	Waitlists   null.String `db:"waitlists"    json:"-"`
-	Password    string      `db:"password"     json:"-"`
-	CreatedOn   string      `db:"created_on"   json:"-"`
-	UpdatedOn   string      `db:"updated_on"   json:"-"`
+	ID          int               `db:"id"           json:"id"`
+	FirstName   string            `db:"first_name"   json:"first_name"`
+	LastName    null.String       `db:"last_name"    json:"last_name"`
+	Email       string            `db:"email"        json:"email"`
+	Avatar      null.String       `db:"avatar"       json:"avatar"`
+	Bio         null.String       `db:"bio"          json:"bio"`
+	School      null.String       `db:"school"       json:"school"`
+	Major1      null.String       `db:"major1"       json:"major1"`
+	Major2      null.String       `db:"major2"       json:"major2"`
+	Minor       null.String       `db:"minor"        json:"minor"`
+	Courses     types.NullJSONText`db:"courses"      json:"courses"`
+	StudyGroups null.String       `db:"study_groups" json:"-"`
+	Waitlists   null.String       `db:"waitlists"    json:"-"`
+	Password    string            `db:"password"     json:"-"`
+	CreatedOn   string            `db:"created_on"   json:"-"`
+	UpdatedOn   string            `db:"updated_on"   json:"-"`
 }
 
 func (u *User) AddStudyGroupToWaitlists(studyGroupID string) error {
