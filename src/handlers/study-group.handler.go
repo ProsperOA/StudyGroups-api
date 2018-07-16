@@ -52,6 +52,24 @@ func GetStudyGroups(c *gin.Context) {
 	server.Respond(c, studyGroups, "", status)
 }
 
+func GetStudyGroupMembers(c *gin.Context) {
+	studyGroupID := c.Param("id")
+
+	if !utils.IsInt(studyGroupID) {
+		server.Respond(c, nil, "invalid study group id", http.StatusBadRequest)
+		return
+	}
+
+	studyGroupMembers, status, err := controllers.GetStudyGroupMembers(studyGroupID)
+
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
+
+	server.Respond(c, studyGroupMembers, "", status)
+}
+
 func JoinStudyGroup(c *gin.Context) {
 	var userID models.UserID
 	studyGroupID := c.Param("id")

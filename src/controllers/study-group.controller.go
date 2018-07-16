@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/prosperoa/study-groups/src/models"
 	"github.com/prosperoa/study-groups/src/server"
@@ -44,6 +45,67 @@ func GetStudyGroups(page, pageSize int) ([]models.StudyGroup, int, error) {
 	}
 
 	return studyGroups, http.StatusOK, nil
+}
+
+func GetStudyGroupMembers(studyGroupID string) (interface{}, int, error) {
+	var (
+		studyGroup models.StudyGroup
+		members []models.User
+		waitlist []models.User
+		users = map[string][]models.User{
+			"members": []models.User{},
+			"waitlist": []models.User{},
+		}
+	)
+	errMsg := errors.New("unable to get study group members")
+
+	getUsers := func (userIDsCSV, usersType string, sgUsers []models.User) error {
+		if userIDsCSV == "" { return nil }
+
+		query := "SELECT * FROM users WHERE id = "
+		for i, userID := range strings.Split(userIDsCSV, ",") {
+			if i == 0 {
+				query += userID
+				continue
+			}
+
+			query += " OR id = " + userID
+		}
+
+		if err := server.DB.Select(&sgUsers, query); err != nil {
+			return errMsg
+		}
+
+		users[usersType] = sgUsers
+		return nil
+	}
+
+
+	err := server.DB.Get(&studyGroup,
+		`SELECT members, waitlist
+		 FROM study_groups
+		 WHERE id = $1
+		 AND members IS NOT NULL
+		 OR waitlist IS NOT NULL`,
+		studyGroupID,
+	)
+
+	switch {
+		case err == sql.ErrNoRows:
+			return nil, http.StatusNotFound, errors.New("study group doesn't exist")
+		case err != nil:
+			return nil, http.StatusInternalServerError, errMsg
+	}
+
+	if err = getUsers(studyGroup.Members.String, "members", members); err != nil {
+		return users, http.StatusInternalServerError, err
+	}
+
+	if err = getUsers(studyGroup.Waitlist.String, "waitlist", waitlist); err != nil {
+		return users, http.StatusInternalServerError, err
+	}
+
+	return users, http.StatusOK, nil
 }
 
 func DeleteStudyGroup(id, userID string) (int, error) {
