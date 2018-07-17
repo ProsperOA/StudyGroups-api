@@ -31,18 +31,31 @@ func GetStudyGroup(c *gin.Context) {
 }
 
 func GetStudyGroups(c *gin.Context) {
-	page := c.DefaultQuery("page", "0")
-	pageSize := c.DefaultQuery("page_size", "30")
+	pageIndex, _      := strconv.Atoi(c.DefaultQuery("page_index", "0"))
+	pageSize, _       := strconv.Atoi(c.DefaultQuery("page_size", "30"))
+	availableSpots, _ := strconv.Atoi(c.DefaultQuery("available_spots", "1"))
 
-	if !utils.IsInt(page) || !utils.IsInt(pageSize) {
+	filter := models.StudyGroupsFilter{
+		BaseFilter: models.BaseFilter{
+			PageIndex: pageIndex,
+			PageSize:  pageSize,
+			Name:      c.Query("name"),
+		},
+		AvailableSpots: availableSpots,
+		Location:       c.Query("location"),
+		MeetingDate:    c.Query("meeting_date"),
+		CourseCode:     c.Query("course_code"),
+		CourseName:     c.Query("course_name"),
+		Instructor:     c.Query("instructor"),
+		Term:           c.Query("term"),
+	}
+
+	if err := server.Validate.Struct(filter); err != nil {
 		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
 		return
 	}
 
-	p, _ := strconv.Atoi(page)
-	ps, _ := strconv.Atoi(pageSize)
-
-	studyGroups, status, err := controllers.GetStudyGroups(p, ps)
+	studyGroups, status, err := controllers.GetStudyGroups(filter)
 
 	if err != nil {
 		server.Respond(c, nil, err.Error(), status)

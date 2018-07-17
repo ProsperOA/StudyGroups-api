@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -28,20 +29,36 @@ func GetStudyGroup(id string) (models.StudyGroup, int, error) {
 	return studyGroup, http.StatusOK, nil
 }
 
-func GetStudyGroups(page, pageSize int) ([]models.StudyGroup, int, error) {
+func GetStudyGroups(filter models.StudyGroupsFilter) ([]models.StudyGroup, int, error) {
 	var studyGroups []models.StudyGroup
 
-	err := server.DB.Select(&studyGroups, "SELECT * FROM study_groups LIMIT $1 OFFSET $2",
-		pageSize, pageSize*page,
+	query := fmt.Sprintf("SELECT * FROM study_groups WHERE available_spots >= %d",
+		filter.AvailableSpots,
 	)
 
+	if filter.Name != "" {
+		query += fmt.Sprintf(" AND levenshtein(name, %s) < 5", filter.Name)
+	}
+
+	if filter.Location != "" {
+		query += fmt.Sprintf(" AND levenshtein(location, %s) < 5", filter.Location)
+	}
+
+	if filter.MeetingDate != "" {
+		query += fmt.Sprintf(" AND meeting_date = %s", filter.MeetingDate)
+	}
+
+	query += fmt.Sprintf(" LIMIT %d OFFSET %d", filter.PageSize, filter.PageIndex)
+
+	err := server.DB.Select(&studyGroups, query)
+
 	switch {
-	case err == sql.ErrNoRows, len(studyGroups) == 0:
-		return studyGroups, http.StatusNotFound, errors.New("no study groups found")
-	case err != nil:
-		return studyGroups, http.StatusInternalServerError, errors.New(
-			"unable to get study groups",
-		)
+		case err == sql.ErrNoRows, len(studyGroups) == 0:
+			return studyGroups, http.StatusNotFound, errors.New("no study groups found")
+		case err != nil:
+			return studyGroups, http.StatusInternalServerError, errors.New(
+				"unable to get study groups",
+			)
 	}
 
 	return studyGroups, http.StatusOK, nil
