@@ -71,8 +71,6 @@ func GetStudyGroups(filter models.StudyGroupsFilter) ([]models.StudyGroup, int, 
 
 	switch {
 		case err != sql.ErrNoRows && err != nil:
-			log.Println(query)
-			log.Println(err.Error())
 			return studyGroups, http.StatusInternalServerError, errors.New(
 				"unable to get study groups",
 			)
