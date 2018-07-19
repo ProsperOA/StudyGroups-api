@@ -62,7 +62,10 @@ func GetStudyGroups(c *gin.Context) {
 		return
 	}
 
-	server.Respond(c, studyGroups, "", status)
+	var message string
+	if len(studyGroups) == 0 { message = "no study groups found" }
+
+	server.Respond(c, studyGroups, message, status)
 }
 
 func GetStudyGroupMembers(c *gin.Context) {
