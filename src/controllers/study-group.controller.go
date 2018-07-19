@@ -45,7 +45,24 @@ func GetStudyGroups(filter models.StudyGroupsFilter) ([]models.StudyGroup, int, 
 	}
 
 	if filter.MeetingDate != "" {
-		query += fmt.Sprintf(" AND meeting_date = %s", filter.MeetingDate)
+		date := strings.Split(filter.MeetingDate, "T")[0]
+		query += fmt.Sprintf(" AND to_char(meeting_date, 'YYYY-MM-DD') LIKE '%s'", date)
+	}
+
+	if filter.CourseCode != "" {
+		query += fmt.Sprintf(" AND levenshtein(course ->> 'code', '%s') < 5", filter.CourseCode)
+	}
+
+	if filter.CourseName != "" {
+		query += fmt.Sprintf(" AND levenshtein(course ->> 'name', '%s') < 5", filter.CourseName)
+	}
+
+	if filter.Instructor != "" {
+		query += fmt.Sprintf(" AND levenshtein(course ->> 'instructor', '%s') < 5", filter.Instructor)
+	}
+
+	if filter.Term != "" {
+		query += fmt.Sprintf(" AND levenshtein(course ->> 'term', '%s') < 5", filter.Term)
 	}
 
 	query += fmt.Sprintf(" LIMIT %d OFFSET %d", filter.PageSize, filter.PageIndex)
@@ -53,9 +70,9 @@ func GetStudyGroups(filter models.StudyGroupsFilter) ([]models.StudyGroup, int, 
 	err := server.DB.Select(&studyGroups, query)
 
 	switch {
-		case err == sql.ErrNoRows, len(studyGroups) == 0:
-			return studyGroups, http.StatusNotFound, errors.New("no study groups found")
-		case err != nil:
+		case err != sql.ErrNoRows && err != nil:
+			log.Println(query)
+			log.Println(err.Error())
 			return studyGroups, http.StatusInternalServerError, errors.New(
 				"unable to get study groups",
 			)
