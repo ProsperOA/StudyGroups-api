@@ -39,9 +39,9 @@ func GetStudyGroups(c *gin.Context) {
 		BaseFilter: models.BaseFilter{
 			PageIndex: pageIndex,
 			PageSize:  pageSize,
-			Name:      c.Query("name"),
 		},
 		AvailableSpots: availableSpots,
+		StudyGroupName: c.Query("study_group_name"),
 		Location:       c.Query("location"),
 		MeetingDate:    c.Query("meeting_date"),
 		CourseCode:     c.Query("course_code"),

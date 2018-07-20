@@ -36,8 +36,8 @@ func GetStudyGroups(filter models.StudyGroupsFilter) ([]models.StudyGroup, int, 
 		filter.AvailableSpots,
 	)
 
-	if filter.Name != "" {
-		query += fmt.Sprintf(" AND levenshtein(name, '%s') < 5", filter.Name)
+	if filter.StudyGroupName != "" {
+		query += fmt.Sprintf(" AND levenshtein(name, '%s') < 5", filter.StudyGroupName)
 	}
 
 	if filter.Location != "" {
