@@ -40,13 +40,14 @@ type ChangePassword struct {
 
 type StudyGroupsFilter struct {
 	BaseFilter
-	AvailableSpots int    `json:"available_spots" validate:"min=1"`
+	StudyGroupName string `json:"study_group_name"`
 	Location       string `json:"location"`
 	MeetingDate    string `json:"meeting_date"`
 	CourseCode     string `json:"course_code"`
 	CourseName     string `json:"course_name"`
 	Instructor     string `json:"instructor"`
 	Term           string `json:"term"`
+	AvailableSpots int    `json:"available_spots" validate:"min=1"`
 }
 
 func (u UserID) String() string {
