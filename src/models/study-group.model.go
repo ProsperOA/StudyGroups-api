@@ -12,19 +12,19 @@ import (
 )
 
 type StudyGroup struct {
-	ID             int                `db:"id"              json:"id"`
-	UserID         int                `db:"user_id"         json:"user_id"`
-	Name           string             `db:"name"            json:"name"`
-	Members        null.String        `db:"members"         json:"members"`
-	MembersLimit   null.Int           `db:"members_limit"   json:"members_limit"`
-	AvailableSpots int                `db:"available_spots" json:"available_spots"`
-	Location       null.String        `db:"location"        json:"location"`
-	Description    null.String        `db:"description"     json:"description"`
-	MeetingDate    null.String        `db:"meeting_date"    json:"meeting_date"`
-	Course         types.NullJSONText `db:"course"          json:"course"`
-	CreatedAt      string              `db:"created_on"     json:"-"`
-	UpdatedAt      string              `db:"updated_on"     json:"-"`
-	Waitlist       null.String         `db:"waitlist"       json:"-"`
+	ID             int                 `db:"id"              json:"id"`
+	UserID         int                 `db:"user_id"         json:"user_id"`
+	Name           string              `db:"name"            json:"name"`
+	Members        null.String         `db:"members"         json:"members"`
+	MembersLimit   null.Int            `db:"members_limit"   json:"members_limit"`
+	AvailableSpots int                 `db:"available_spots" json:"available_spots"`
+	Location       null.String         `db:"location"        json:"location"`
+	Description    null.String         `db:"description"     json:"description"`
+	MeetingDate    null.String         `db:"meeting_date"    json:"meeting_date"`
+	Course         types.NullJSONText  `db:"course"          json:"course"`
+	Waitlist       null.String         `db:"waitlist"        json:"waitlist"`
+	CreatedAt      string              `db:"created_on"      json:"-"`
+	UpdatedAt      string              `db:"updated_on"      json:"-"`
 }
 
 func (sg *StudyGroup) AddUserToWaitlist(userID string) error {

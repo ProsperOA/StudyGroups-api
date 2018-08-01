@@ -140,6 +140,35 @@ func GetStudyGroupMembers(studyGroupID string) (interface{}, int, error) {
 	return users, http.StatusOK, nil
 }
 
+func UpdateStudyGroup(studyGroup models.StudyGroup) (models.StudyGroup, int, error) {
+	var updatedStudyGroup models.StudyGroup
+
+	_, err := server.DB.Exec(
+	 `UPDATE study_groups
+		SET
+			name          = $1,
+			members_limit = $2,
+			description   = $3,
+			meeting_date  = $4,
+			location      = $5
+		WHERE id = $6
+		RETURNING *`,
+		studyGroup.Name,
+		studyGroup.MembersLimit,
+		studyGroup.Description,
+		studyGroup.MeetingDate,
+		studyGroup.Location,
+		studyGroup.ID,
+	)
+
+	if err != nil {
+		return updatedStudyGroup, http.StatusInternalServerError,
+			errors.New("unable to update study group")
+	}
+
+	return updatedStudyGroup, http.StatusOK, nil
+}
+
 func DeleteStudyGroup(id, userID string) (int, error) {
 	_, err := server.DB.Exec("DELETE FROM study_groups WHERE id = $1 AND user_id = $2",
 		id, userID,

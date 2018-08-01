@@ -110,6 +110,30 @@ func JoinStudyGroup(c *gin.Context) {
 	server.Respond(c, nil, "user added to study group waitlist", status)
 }
 
+func UpdateStudyGroup(c *gin.Context) {
+	var studyGroup models.StudyGroup
+	studyGroupID := c.Param("id")
+
+	if err := c.ShouldBindWith(&studyGroup, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing params", http.StatusBadRequest)
+		return
+	}
+
+	if err := server.Validate.Struct(studyGroup); err != nil || !utils.IsInt(studyGroupID) {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
+
+	updatedStudyGroup, status, err := controllers.UpdateStudyGroup(studyGroup)
+
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
+
+	server.Respond(c, updatedStudyGroup, "", status)
+}
+
 func DeleteStudyGroup(c *gin.Context) {
 	var userID models.UserID
 	studyGroupID := c.Param("id")
