@@ -122,7 +122,7 @@ func GetUserStudyGroups(userID string, page, pageSize int) ([]models.StudyGroup,
 
 	err := server.DB.Select(
 		&studyGroups,
-		"SELECT * FROM study_groups WHERE user_id = $1 LIMIT $2 OFFSET $3",
+		"SELECT * FROM study_groups WHERE user_id = $1 ORDER BY updated_on ASC LIMIT $2 OFFSET $3",
 		userID,
 		pageSize,
 		pageSize*page,
