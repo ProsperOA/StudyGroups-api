@@ -34,13 +34,14 @@ func main() {
   private.PATCH( "/users/:id/password",     handlers.ChangePassword)
   private.GET(   "/users/:id/study_groups", handlers.GetUserStudyGroups)
 
-  private.GET(   "/study_groups",             handlers.GetStudyGroups)
-  private.GET(   "/study_groups/:id",         handlers.GetStudyGroup)
-  private.PATCH( "/study_groups/:id",         handlers.UpdateStudyGroup)
-  private.DELETE("/study_groups/:id",         handlers.DeleteStudyGroup)
-  private.PATCH( "/study_groups/:id/join",    handlers.JoinStudyGroup)
-  private.PATCH( "/study_groups/:id/leave",   handlers.LeaveStudyGroup)
-  private.GET(   "/study_groups/:id/members", handlers.GetStudyGroupMembers)
+  private.GET(   "/study_groups",                         handlers.GetStudyGroups)
+  private.GET(   "/study_groups/:id",                     handlers.GetStudyGroup)
+  private.PATCH( "/study_groups/:id",                     handlers.UpdateStudyGroup)
+  private.DELETE("/study_groups/:id",                     handlers.DeleteStudyGroup)
+  private.PATCH( "/study_groups/:id/join",                handlers.JoinStudyGroup)
+  private.PATCH( "/study_groups/:id/leave",               handlers.LeaveStudyGroup)
+  private.GET(   "/study_groups/:id/members",             handlers.GetStudyGroupMembers)
+  private.PATCH( "/study_groups/:id/waitlist_to_members", handlers.MoveUserFromWaitlistToMembers)
 
   log.Fatal(router.Run(":8080"))
 }

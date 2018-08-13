@@ -110,6 +110,30 @@ func JoinStudyGroup(c *gin.Context) {
 	server.Respond(c, nil, "user added to study group waitlist", status)
 }
 
+func MoveUserFromWaitlistToMembers(c *gin.Context) {
+	var userID models.UserID
+	studyGroupID := c.Param("id")
+
+	if err := c.ShouldBindWith(&userID, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing user id", http.StatusBadRequest)
+		return
+	}
+
+	if err := server.Validate.Struct(userID); err != nil || !utils.IsInt(studyGroupID) {
+		server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	studyGroup, status, err := controllers.MoveUserFromWaitlistToMembers(studyGroupID, userID.String())
+
+	if err != nil {
+		server.Respond(c, nil, err.Error(), status)
+		return
+	}
+
+	server.Respond(c, studyGroup, "", status)
+}
+
 func UpdateStudyGroup(c *gin.Context) {
 	var studyGroup models.StudyGroup
 	studyGroupID := c.Param("id")

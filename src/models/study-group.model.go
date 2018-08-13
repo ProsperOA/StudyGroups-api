@@ -27,6 +27,27 @@ type StudyGroup struct {
 	UpdatedAt      string              `db:"updated_on"      json:"-"`
 }
 
+func (sg *StudyGroup) MoveUserFromWaitlistToMembers(userID string) error {
+	if !utils.Contains(strings.Split(sg.Waitlist.String, ","), userID) {
+		return errors.New("user is not waitlisted")
+	}
+
+	members := strings.Split(sg.Members.String, ",")
+	waitlist := strings.Split(sg.Waitlist.String, ",")
+
+	if sg.Members.String == "" {
+		sg.Members = null.StringFrom(userID)
+	} else {
+		members = append(members, userID)
+		sg.Members = null.StringFrom(strings.Join(members, ","))
+	}
+
+	sg.Waitlist = null.StringFrom(strings.Join(utils.Splice(waitlist, userID), ","))
+
+	return nil
+}
+
+
 func (sg *StudyGroup) AddUserToWaitlist(userID string) error {
 	if sg.AvailableSpots == 0 {
 		return errors.New("study group members limit reached")

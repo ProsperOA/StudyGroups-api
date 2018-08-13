@@ -268,6 +268,59 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
 	return http.StatusOK, nil
 }
 
+func MoveUserFromWaitlistToMembers(studyGroupID, userID string) (models.StudyGroup, int, error) {
+	var user models.User
+	var studyGroup models.StudyGroup
+
+	internalErr := func() (models.StudyGroup, int, error) {
+		return studyGroup, http.StatusInternalServerError, errors.New("unable to move user into members")
+	}
+
+	err := server.DB.Get(&studyGroup, "SELECT * FROM study_groups WHERE id = $1", studyGroupID)
+	if err != nil {	return internalErr() }
+
+	if err := studyGroup.MoveUserFromWaitlistToMembers(userID); err != nil {
+		return studyGroup, http.StatusForbidden, err
+	}
+
+	err = server.DB.Get(&user, "SELECT * FROM users WHERE id = $1", userID)
+	if err != nil {	return internalErr() }
+
+	{
+		tx, err := server.DB.Begin()
+		if err != nil {	return internalErr() }
+
+		defer func() (models.StudyGroup, int, error) {
+			if err != nil {
+				log.Println(err.Error())
+				tx.Rollback()
+
+				return internalErr()
+			}
+
+			return studyGroup, 0, nil
+		}()
+
+		_, err = tx.Exec(
+			"UPDATE study_groups SET members = $1, waitlist = $2 WHERE id = $3",
+			studyGroup.Members,
+			studyGroup.Waitlist,
+			studyGroup.ID,
+		)
+
+		_, err = tx.Exec(
+			"UPDATE users SET study_groups = $1, waitlists = $2 WHERE id = $3",
+			user.StudyGroups,
+			user.Waitlists,
+			user.ID,
+		)
+
+		err = tx.Commit()
+	}
+
+	return studyGroup, http.StatusOK, nil
+}
+
 func LeaveStudyGroup(studyGroupID, userID string) (int, error) {
 	var user models.User
 	var studyGroup models.StudyGroup
