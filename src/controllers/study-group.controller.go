@@ -184,7 +184,7 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
 	var studyGroup models.StudyGroup
 
 	internalErr := func() (int, error) {
-		return http.StatusInternalServerError, errors.New("unable to leave study group")
+		return http.StatusInternalServerError, errors.New("unable to join study group")
 	}
 
 	err := server.DB.Get(
