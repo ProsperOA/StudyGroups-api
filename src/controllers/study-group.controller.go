@@ -116,9 +116,7 @@ func GetStudyGroupMembers(studyGroupID string) (interface{}, int, error) {
 	err := server.DB.Get(&studyGroup,
 		`SELECT members, waitlist
 		 FROM study_groups
-		 WHERE id = $1
-		 AND members IS NOT NULL
-		 OR waitlist IS NOT NULL`,
+		 WHERE id = $1`,
 		studyGroupID,
 	)
 
