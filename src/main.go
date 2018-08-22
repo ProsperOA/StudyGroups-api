@@ -35,6 +35,7 @@ func main() {
   private.GET(   "/users/:id/study_groups", handlers.GetUserStudyGroups)
 
   private.GET(   "/study_groups",                         handlers.GetStudyGroups)
+  private.POST(  "/study_groups",                         handlers.CreateStudyGroup)
   private.GET(   "/study_groups/:id",                     handlers.GetStudyGroup)
   private.PATCH( "/study_groups/:id",                     handlers.UpdateStudyGroup)
   private.DELETE("/study_groups/:id",                     handlers.DeleteStudyGroup)

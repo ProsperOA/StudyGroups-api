@@ -38,6 +38,16 @@ type ChangePassword struct {
 	Current string `json:"current_password" validate:"required"`
 }
 
+type NewStudyGroup struct {
+	UserID         int  `json:"user_id"       validate:"required,gt=0"`
+	Name         string `json:"name"          validate:"required,max=40`
+	MembersLimit string `json:"members_limit" validate:"required,gt=0`
+	Location     string `json:"location"      validate:"required,gt=0`
+	Description  string `json:"description"   validate:"max=280"`
+	MeetingDate  string `json:"meeting_date"`
+	Course       string `json:"course"`
+}
+
 type StudyGroupsFilter struct {
 	BaseFilter
 	StudyGroupName string `json:"study_group_name"`

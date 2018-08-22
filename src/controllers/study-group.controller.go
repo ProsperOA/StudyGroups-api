@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/prosperoa/study-groups/src/models"
 	"github.com/prosperoa/study-groups/src/server"
@@ -136,6 +137,37 @@ func GetStudyGroupMembers(studyGroupID string) (interface{}, int, error) {
 	}
 
 	return users, http.StatusOK, nil
+}
+
+func CreateStudyGroup(studyGroup models.StudyGroup) (models.StudyGroup, int, error) {
+	var newStudyGroup models.StudyGroup
+
+	err := server.DB.Get(
+	 &newStudyGroup,
+	 `INSERT INTO study_groups
+			(user_id, name, members_limit, available_spots, location, description, meeting_date, course, created_on, updated_on)
+		VALUES
+			($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING *`,
+			studyGroup.UserID,
+			studyGroup.Name,
+			studyGroup.MembersLimit,
+			studyGroup.MembersLimit,
+			studyGroup.Location,
+			studyGroup.Description,
+			studyGroup.MeetingDate,
+			studyGroup.Course,
+			time.Now(),
+			time.Now(),
+		)
+
+		if err != nil {
+			log.Println(err.Error())
+			return newStudyGroup, http.StatusInternalServerError,
+				errors.New("unable to create study group")
+		}
+
+		return newStudyGroup, http.StatusOK, nil
 }
 
 func UpdateStudyGroup(studyGroup models.StudyGroup) (models.StudyGroup, int, error) {
@@ -381,7 +413,6 @@ func LeaveStudyGroup(studyGroupID, userID string) (int, error) {
 			return 0, nil
 		}()
 
-		// TODO: refactor dynamic query
 		if sgColumnVal.String == "" {
 			_, err = tx.Exec(
 				"UPDATE study_groups SET "+sgColumnName+" = null, available_spots = $1 WHERE id = $2",
