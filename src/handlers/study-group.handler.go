@@ -132,14 +132,14 @@ func JoinStudyGroup(c *gin.Context) {
 		return
 	}
 
-	status, err := controllers.JoinStudyGroup(studyGroupID, userID.String())
+	studyGroup, status, err := controllers.JoinStudyGroup(studyGroupID, userID.String())
 
 	if err != nil {
 		server.Respond(c, nil, err.Error(), status)
 		return
 	}
 
-	server.Respond(c, nil, "user added to study group waitlist", status)
+	server.Respond(c, studyGroup, "user added to study group waitlist", status)
 }
 
 func MoveUserFromWaitlistToMembers(c *gin.Context) {

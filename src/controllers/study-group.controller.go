@@ -217,12 +217,12 @@ func DeleteStudyGroup(id, userID string) (int, error) {
 	return http.StatusOK, nil
 }
 
-func JoinStudyGroup(studyGroupID, userID string) (int, error) {
+func JoinStudyGroup(studyGroupID, userID string) (models.StudyGroup, int, error) {
 	var user models.User
 	var studyGroup models.StudyGroup
 
-	internalErr := func() (int, error) {
-		return http.StatusInternalServerError, errors.New("unable to join study group")
+	internalErr := func() (models.StudyGroup, int, error) {
+		return studyGroup, http.StatusInternalServerError, errors.New("unable to join study group")
 	}
 
 	err := server.DB.Get(
@@ -233,7 +233,7 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
 
 	switch {
 	case err == sql.ErrNoRows:
-		return http.StatusNotFound, errors.New("study group not found")
+		return studyGroup, http.StatusNotFound, errors.New("study group not found")
 	case err != nil:
 		return internalErr()
 	}
@@ -246,16 +246,16 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
 
 	switch {
 	case err == sql.ErrNoRows:
-		return http.StatusNotFound, errors.New("user not found")
+		return studyGroup, http.StatusNotFound, errors.New("user not found")
 	case err != nil:
 		return internalErr()
 	}
 
 	if err = studyGroup.AddUserToWaitlist(userID); err != nil {
-		return http.StatusForbidden, err
+		return studyGroup, http.StatusForbidden, err
 	}
 	if err = user.AddStudyGroupToWaitlists(studyGroupID); err != nil {
-		return http.StatusForbidden, err
+		return studyGroup, http.StatusForbidden, err
 	}
 
 	{
@@ -264,14 +264,14 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
 			return internalErr()
 		}
 
-		defer func() (int, error) {
+		defer func() (models.StudyGroup, int, error) {
 			if err != nil {
 				log.Println(err.Error())
 				tx.Rollback()
 				return internalErr()
 			}
 
-			return 0, nil
+			return studyGroup, 0, nil
 		}()
 
 		if studyGroup.Waitlist.String == "" {
@@ -290,11 +290,13 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
 		}
 
 		if user.Waitlists.String == "" {
-			_, err = tx.Exec("UPDATE users SET waitlists = null WHERE id = $1",
+			_, err = tx.Exec(
+			 "UPDATE users SET waitlists = null WHERE id = $1",
 				userID,
 			)
 		} else {
-			_, err = tx.Exec("UPDATE users SET waitlists = $1 WHERE id = $2",
+			_, err = tx.Exec(
+			 "UPDATE users SET waitlists = $1 WHERE id = $2",
 				user.Waitlists.String,
 				userID,
 			)
@@ -303,7 +305,7 @@ func JoinStudyGroup(studyGroupID, userID string) (int, error) {
 		err = tx.Commit()
 	}
 
-	return http.StatusOK, nil
+	return studyGroup, http.StatusOK, nil
 }
 
 func MoveUserFromWaitlistToMembers(studyGroupID, userID string) (models.StudyGroup, int, error) {
