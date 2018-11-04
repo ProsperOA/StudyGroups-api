@@ -205,19 +205,85 @@ func UpdateStudyGroup(studyGroup models.StudyGroup) (models.StudyGroup, int, err
 	return updatedStudyGroup, http.StatusOK, nil
 }
 
-func DeleteStudyGroup(id, userID string) (int, error) {
-	_, err := server.DB.Exec("DELETE FROM study_groups WHERE id = $1 AND user_id = $2",
-		id, userID,
+func DeleteStudyGroup(studyGroupID, userID string) (int, error) {
+	var studyGroup models.StudyGroup
+
+	internalErr := func () (int, error) {
+		return http.StatusInternalServerError, errors.New("unable delete study group")
+	}
+
+	err := server.DB.Get(
+	 &studyGroup,
+	 "SELECT members, waitlist FROM study_groups WHERE id = $1 AND user_id = $2",
+		studyGroupID, userID,
 	)
 
-	if err != nil {
-		return http.StatusInternalServerError, errors.New("unable delete study group")
+	if err != nil {	return internalErr() }
+
+	var studyGroupUserIDs []string
+	membersCSV := studyGroup.Members.String
+	waitlistCSV := studyGroup.Waitlist.String
+
+	if membersCSV != "" {
+		studyGroupUserIDs = append(
+			studyGroupUserIDs,
+			strings.Split(membersCSV, ",")...
+		)
+	}
+
+	if waitlistCSV != "" {
+		studyGroupUserIDs = append(
+			studyGroupUserIDs,
+			strings.Split(waitlistCSV, ",")...
+		)
+	}
+
+	if studyGroupUserIDs != nil {
+		query := "SELECT id, study_groups, waitlists FROM users WHERE id = " + studyGroupUserIDs[0]
+
+		for i := 1; i < len(studyGroupUserIDs); i++ {
+			query += " OR id = " + studyGroupUserIDs[i]
+		}
+
+		var users []models.User
+		if err = server.DB.Select(&users, query); err != nil {
+			return internalErr()
+		}
+
+		{
+			tx, err := server.DB.Begin()
+
+			defer func() (int, error) {
+				if err != nil {
+					log.Println(err.Error())
+					tx.Rollback()
+					return internalErr()
+				}
+
+				return 0, nil
+			}()
+
+			for _, user := range users {
+				user.LeaveStudyGroup(studyGroupID)
+
+				_, err = tx.Exec(
+				 "UPDATE users SET study_groups = $1, waitlists = $2 WHERE id = $3",
+					user.StudyGroups,
+					user.Waitlists,
+					user.ID,
+				)
+			}
+
+			_, err = tx.Exec("DELETE FROM study_groups WHERE id = $1", studyGroupID)
+			err = tx.Commit()
+		}
 	}
 
 	return http.StatusOK, nil
 }
 
 func JoinStudyGroup(studyGroupID, userID string) (models.StudyGroup, int, error) {
+	log.Println("user id", userID)
 	var user models.User
 	var studyGroup models.StudyGroup
 
