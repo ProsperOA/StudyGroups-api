@@ -31,6 +31,9 @@ func GetStudyGroup(c *gin.Context) {
 }
 
 func GetStudyGroups(c *gin.Context) {
+	uID, _            := strconv.Atoi(c.Query("user_id"))
+	userID            := models.UserID{Value: uID}
+
 	pageIndex, _      := strconv.Atoi(c.DefaultQuery("page_index", "0"))
 	pageSize, _       := strconv.Atoi(c.DefaultQuery("page_size", "30"))
 	availableSpots, _ := strconv.Atoi(c.DefaultQuery("available_spots", "1"))
@@ -50,12 +53,17 @@ func GetStudyGroups(c *gin.Context) {
 		Term:           c.Query("term"),
 	}
 
+	if err := server.Validate.Struct(userID); err != nil {
+		server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+		return
+	}
+
 	if err := server.Validate.Struct(filter); err != nil {
 		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
 		return
 	}
 
-	studyGroups, status, err := controllers.GetStudyGroups(filter)
+	studyGroups, status, err := controllers.GetStudyGroups(filter, userID.Value)
 
 	if err != nil {
 		server.Respond(c, nil, err.Error(), status)
