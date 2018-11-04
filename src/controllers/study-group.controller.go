@@ -283,7 +283,6 @@ func DeleteStudyGroup(studyGroupID, userID string) (int, error) {
 }
 
 func JoinStudyGroup(studyGroupID, userID string) (models.StudyGroup, int, error) {
-	log.Println("user id", userID)
 	var user models.User
 	var studyGroup models.StudyGroup
 
