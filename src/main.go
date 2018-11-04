@@ -24,7 +24,8 @@ func main() {
   public.POST("/signup", handlers.Signup)
 
   private := router.Group("/api/v1")
-  private.Use(middlewares.AuthHandler())
+	private.Use(middlewares.BasicAuth())
+
   private.GET(   "/users",                  handlers.GetUsers)
   private.GET(   "/users/:id",              handlers.GetUser)
   private.PATCH( "/users/:id/account",      handlers.UpdateAccount)
@@ -38,8 +39,8 @@ func main() {
   private.POST(  "/study_groups",                         handlers.CreateStudyGroup)
   private.GET(   "/study_groups/:id",                     handlers.GetStudyGroup)
   private.PATCH( "/study_groups/:id",                     handlers.UpdateStudyGroup)
-  private.DELETE("/study_groups/:id",                     handlers.DeleteStudyGroup)
-  private.PATCH( "/study_groups/:id/join",                handlers.JoinStudyGroup)
+  private.POST(  "/study_groups/:id",                     handlers.DeleteStudyGroup)
+  private.POST(  "/study_groups/:id/join",                handlers.JoinStudyGroup)
   private.PATCH( "/study_groups/:id/leave",               handlers.LeaveStudyGroup)
   private.GET(   "/study_groups/:id/members",             handlers.GetStudyGroupMembers)
   private.PATCH( "/study_groups/:id/waitlist_to_members", handlers.MoveUserFromWaitlistToMembers)

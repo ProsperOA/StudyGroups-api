@@ -72,14 +72,15 @@ func InitServer() error {
 	return nil
 }
 
-func GenerateAuthToken() (string, error) {
+func GenerateAuthToken(userID string) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
+	claims := make(jwt.MapClaims)
 
-	token.Claims = jwt.MapClaims{
-		"exp": time.Now().Add(time.Hour * 730).Unix(), // ~ 1 month
-		"iat": time.Now().Unix(),
-	}
+	claims["user_id"] = userID
+	claims["exp"] = time.Now().Add(time.Hour * 730).Unix() // ~ 1 month
+	claims["iat"] = time.Now().Unix()
 
+	token.Claims = claims
 	tokenString, err := token.SignedString(JWTSigningKey)
 
 	if err != nil {

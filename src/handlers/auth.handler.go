@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -32,7 +33,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	authToken, err := server.GenerateAuthToken()
+	authToken, err := server.GenerateAuthToken(strconv.Itoa(user.ID))
 	if err != nil {
 		server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
 		return
@@ -72,16 +73,16 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	authToken, err := server.GenerateAuthToken()
-	if err != nil {
-		server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	user, status, err := controllers.Signup(credentials)
 
 	if err != nil {
 		server.Respond(c, nil, err.Error(), status)
+		return
+	}
+
+	authToken, err := server.GenerateAuthToken(strconv.Itoa(user.ID))
+	if err != nil {
+		server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
