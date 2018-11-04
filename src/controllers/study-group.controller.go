@@ -30,11 +30,20 @@ func GetStudyGroup(id string) (models.StudyGroup, int, error) {
 	return studyGroup, http.StatusOK, nil
 }
 
-func GetStudyGroups(filter models.StudyGroupsFilter) ([]models.StudyGroup, int, error) {
+func GetStudyGroups(filter models.StudyGroupsFilter, userID int) ([]models.StudyGroup, int, error) {
 	var studyGroups []models.StudyGroup
 
-	query := fmt.Sprintf("SELECT * FROM study_groups WHERE available_spots >= %d",
+	query := fmt.Sprintf(
+		"SELECT * FROM study_groups WHERE user_id != %d AND available_spots >= %d",
+		userID,
 		filter.AvailableSpots,
+	)
+
+	query += fmt.Sprintf(`
+		AND %d != ANY(
+			(SELECT	regexp_split_to_array(members, ',')	FROM study_groups)::int[]
+		)`,
+		userID,
 	)
 
 	if filter.StudyGroupName != "" {
@@ -68,13 +77,10 @@ func GetStudyGroups(filter models.StudyGroupsFilter) ([]models.StudyGroup, int, 
 
 	query += fmt.Sprintf(" LIMIT %d OFFSET %d", filter.PageSize, filter.PageIndex)
 
-	err := server.DB.Select(&studyGroups, query)
-
-	switch {
-		case err != sql.ErrNoRows && err != nil:
-			return studyGroups, http.StatusInternalServerError, errors.New(
-				"unable to get study groups",
-			)
+	if err := server.DB.Select(&studyGroups, query); err != nil {
+		return studyGroups, http.StatusInternalServerError, errors.New(
+			"unable to get study groups",
+		)
 	}
 
 	return studyGroups, http.StatusOK, nil
