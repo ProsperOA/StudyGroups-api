@@ -1,7 +1,7 @@
 package utils
 
 import (
-  "errors"
+	"errors"
   "math/rand"
   "regexp"
   "strings"
@@ -25,7 +25,7 @@ func GetAuthTokenFromHeader(header string) (string, error) {
 
   if len(authHeader) < 2 {
     return header, errors.New("invalid authorization header")
-  }
+	}
 
   return authHeader[1], nil
 }
@@ -77,4 +77,12 @@ func Trim(s string) string {
   trimmedStr = re_inside_whtsp.ReplaceAllString(trimmedStr, " ")
 
   return trimmedStr
+}
+
+func IndexOf(sl []string, s string) int {
+	for i, v := range sl {
+		if v == s { return i }
+	}
+
+	return -1
 }
