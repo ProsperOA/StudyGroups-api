@@ -114,7 +114,7 @@ func CreateStudyGroup(c *gin.Context) {
 		return
 	}
 
-	server.Respond(c, nil, "user added to study group waitlist", status)
+	server.Respond(c, studyGroup, "study group created", status)
 
 }
 
