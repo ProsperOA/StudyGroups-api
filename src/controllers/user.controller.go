@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"encoding/json"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -34,10 +34,7 @@ func GetUser(c *gin.Context) {
 		return
 	}
 
-	user := models.User{
-		ID: userID,
-	}
-
+	user := models.User{ID: userID}
 	err = user.Get()
 
 	switch {
@@ -89,7 +86,7 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	user := models.User{
-		ID: userID,
+		ID:       userID,
 		Password: password.Value,
 	}
 
@@ -114,7 +111,7 @@ func DeleteUser(c *gin.Context) {
 			Key:    aws.String(strings.TrimPrefix(user.Avatar.String, server.S3BucketURL)),
 		})
 
-		if err != nil {	log.Println(err.Error()) }
+		if err != nil { log.Println(err.Error()) }
 	}
 
 	// remove user from mailchimp list
@@ -137,7 +134,7 @@ func DeleteUser(c *gin.Context) {
 			}
 		} else {
 			log.Println(err.Error())
-    }
+		}
 	} else {
 		log.Println(err.Error())
 	}
@@ -205,7 +202,7 @@ func UploadAvatar(c *gin.Context) {
 	// construct image filename and upload
 	ext := filepath.Ext(file.Filename)
 	image, _ := file.Open()
-	newAvatarFilename := fmt.Sprintf("%d-%s", user.ID, utils.RandString(16) + ext)
+	newAvatarFilename := fmt.Sprintf("%d-%s", user.ID, utils.RandString(16)+ext)
 
 	result, err := server.S3Uploader.Upload(&s3manager.UploadInput{
 		Body:   image,
@@ -235,10 +232,12 @@ func UpdateAccount(c *gin.Context) {
 
 	accountValues := reflect.ValueOf(&account).Elem()
 
-	// trim string values in account
+	// remove extraneous whitespace from strings
 	for i := 0; i < accountValues.NumField(); i++ {
 		field := accountValues.Field(i)
-		if field.Interface() != "string" { continue }
+		if field.Interface() != "string" {
+			continue
+		}
 
 		str := field.Interface().(string)
 		field.SetString(utils.Trim(str))
@@ -250,14 +249,14 @@ func UpdateAccount(c *gin.Context) {
 	}
 
 	user := models.User{
-		ID: userID,
+		ID:        userID,
 		FirstName: account.FirstName,
-		LastName: null.NewString(account.LastName, account.LastName != ""),
-		Bio: null.NewString(account.Bio, account.Bio != ""),
-		School: null.NewString(account.School, account.School != ""),
-		Major1: null.NewString(account.Major1, account.Major1 != ""),
-		Major2: null.NewString(account.Major2, account.Major2 != ""),
-		Minor: null.NewString(account.Minor, account.Minor != ""),
+		LastName:  null.NewString(account.LastName, account.LastName != ""),
+		Bio:       null.NewString(account.Bio, account.Bio != ""),
+		School:    null.NewString(account.School, account.School != ""),
+		Major1:    null.NewString(account.Major1, account.Major1 != ""),
+		Major2:    null.NewString(account.Major2, account.Major2 != ""),
+		Minor:     null.NewString(account.Minor, account.Minor != ""),
 	}
 
 	if err := user.UpdateAccount(); err != nil {
@@ -286,31 +285,31 @@ func ChangePassword(c *gin.Context) {
 	if err != nil {
 		server.Respond(c, nil, "passwords must match", http.StatusBadRequest)
 		return
-  }
+	}
 
-  user := models.User{
-    ID: userID,
-    Password: passwords.Current,
-  }
+	user := models.User{
+		ID:       userID,
+		Password: passwords.Current,
+	}
 
-  err = user.ChangePassword(passwords.New)
+	err = user.ChangePassword(passwords.New)
 
-  switch {
-    case err == sql.ErrNoRows:
-      server.Respond(c, nil, err.Error(), http.StatusNotFound)
-      return
-    case err == bcrypt.ErrMismatchedHashAndPassword:
-      server.Respond(c, nil, "incorrect password", http.StatusUnauthorized)
-      return
-    case err != nil:
-      server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
-      return
-  }
+	switch {
+		case err == sql.ErrNoRows:
+			server.Respond(c, nil, err.Error(), http.StatusNotFound)
+			return
+		case err == bcrypt.ErrMismatchedHashAndPassword:
+			server.Respond(c, nil, "incorrect password", http.StatusUnauthorized)
+			return
+		case err != nil:
+			server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
+			return
+	}
 
 	server.Respond(c, nil, "password successfully changed", http.StatusOK)
 }
 
-func UpdateCourses (c *gin.Context) {
+func UpdateCourses(c *gin.Context) {
 	var coursesJSON []models.Course
 	userID, _ := strconv.Atoi(c.Param("id"))
 

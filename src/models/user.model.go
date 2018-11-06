@@ -1,12 +1,7 @@
 package models
 
 import (
-	// "database/sql"
 	"errors"
-	// "fmt"
-	// "log"
-	// "mime/multipart"
-	// "net/http"
 	"reflect"
 	"strings"
 	"time"
@@ -95,14 +90,14 @@ func (u *User) LeaveStudyGroup(studyGroupID string) (string, null.String, error)
 }
 
 func (u *User) Get() error {
-	if u.ID == 0 { return errors.New("missing user ID") }
+	if u.ID == 0 { return errors.New("invalid user id") }
 
 	return server.DB.Get(u, "SELECT * FROM users WHERE id = $1", u.ID)
 }
 
 func (u *Users) Get(page, pageSize int) error {
-  if page < 0 { page = 0 }
-  if pageSize < 0 { pageSize = 30 }
+	if page < 0 {	page = 0 }
+	if pageSize < 0 {	pageSize = 30 }
 
 	return server.DB.Select(u, "SELECT * FROM users LIMIT $1 OFFSET $2",
 		pageSize, pageSize * page,
@@ -110,20 +105,28 @@ func (u *Users) Get(page, pageSize int) error {
 }
 
 func (u *User) Delete() error {
-  var passwordHash string
+	var passwordHash string
 
-  if u.ID == 0 || u.Password == "" {
-    return errors.New("invalid password")
-  }
+	if u.ID == 0 || u.Password == "" {
+		return errors.New("invalid password")
+	}
 
-  err := server.DB.Get(&passwordHash, "SELECT password FROM users WHERE id = $1", u.ID)
-	if err != nil {	return err }
+	err := server.DB.Get(
+   &passwordHash,
+   "SELECT password FROM users WHERE id = $1",
+    u.ID,
+  )
+	if err != nil { return err }
 
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(u.Password))
-	if err != nil {	return err }
+	if err != nil { return err }
 
-  err = server.DB.Get(u, "DELETE FROM users WHERE id = $1 RETURNING email, avatar", u.ID)
-	if err != nil {	return err }
+	err = server.DB.Get(
+    u,
+    "DELETE FROM users WHERE id = $1 RETURNING email, avatar",
+    u.ID,
+  )
+	if err != nil { return err }
 
 	return nil
 }
@@ -150,27 +153,27 @@ func (u *User) Delete() error {
 // }
 
 func (u *User) SetAvatar(avatarURL string) error {
-  if u.ID == 0 || u.Avatar.String == "" {
-    return errors.New("missing user id or avatar url")
-  }
+	if u.ID == 0 || u.Avatar.String == "" {
+		return errors.New("missing user id or avatar url")
+	}
 
-  _, err := server.DB.Exec(
-   "UPDATE users SET avatar = $1 WHERE id = $2",
-    avatarURL,
-    u.ID,
-  )
+	_, err := server.DB.Exec(
+	 "UPDATE users SET avatar = $1 WHERE id = $2",
+		avatarURL,
+		u.ID,
+	)
 
 	return err
 }
 
 func (u *User) UpdateAccount() error {
-  if u.ID == 0 || u.FirstName == "" {
-    return errors.New("user id and first name required")
-  }
+	if u.ID == 0 || u.FirstName == "" {
+		return errors.New("user id and first name required")
+	}
 
 	return server.DB.Get(
-    u,
-   `UPDATE
+		u,
+	 `UPDATE
       users
     SET
       first_name = $1,
@@ -201,37 +204,37 @@ func (u *User) ChangePassword(newPassword string) error {
 	var currentPasswordHash string
 
 	err := server.DB.Get(
-    &currentPasswordHash,
-    "SELECT password FROM users WHERE id = $1",
+	 &currentPasswordHash,
+	 "SELECT password FROM users WHERE id = $1",
 		u.ID,
-  )
-  if err != nil { return errors.New("user not found") }
+	)
+	if err != nil {	return errors.New("user not found") }
 
 	err = bcrypt.CompareHashAndPassword([]byte(currentPasswordHash), []byte(u.Password))
 	if err != nil {	return err }
 
 	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.MinCost)
-	if err != nil { return err }
+	if err != nil {	return err }
 
 	_, err = server.DB.Exec(
-   "UPDATE users SET password = $1 WHERE id = $2",
-    newPasswordHash,
-    u.ID,
-  )
+	 "UPDATE users SET password = $1 WHERE id = $2",
+		newPasswordHash,
+		u.ID,
+	)
 
-  return err
+	return err
 }
 
-func (u *User) UpdateCourses () error {
-  if u.ID == 0 || u.Courses.JSONText == nil {
-    return errors.New("invalid user id or courses")
-  }
+func (u *User) UpdateCourses() error {
+	if u.ID == 0 || u.Courses.JSONText == nil {
+		return errors.New("invalid user id or courses")
+	}
 
 	_, err := server.DB.Exec(
-   "UPDATE users SET courses = $1 WHERE id = $2",
-    u.Courses,
-    u.ID,
-  )
+		"UPDATE users SET courses = $1 WHERE id = $2",
+		u.Courses,
+		u.ID,
+	)
 
-  return err
+	return err
 }
