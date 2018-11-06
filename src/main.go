@@ -5,6 +5,7 @@ import (
   "net/http"
 
   "github.com/gin-gonic/gin"
+  "github.com/prosperoa/study-groups/src/controllers"
   "github.com/prosperoa/study-groups/src/handlers"
   "github.com/prosperoa/study-groups/src/middlewares"
   "github.com/prosperoa/study-groups/src/server"
@@ -26,14 +27,14 @@ func main() {
   private := router.Group("/api/v1")
 	private.Use(middlewares.BasicAuth())
 
-  private.GET(   "/users",                  handlers.GetUsers)
-  private.GET(   "/users/:id",              handlers.GetUser)
-  private.PATCH( "/users/:id/account",      handlers.UpdateAccount)
-  private.POST(  "/users/:id/avatar",       handlers.UploadAvatar)
-  private.PUT(   "/users/:id/courses",      handlers.UpdateCourses)
-  private.POST(  "/users/:id/delete",       handlers.DeleteUser)
-  private.PATCH( "/users/:id/password",     handlers.ChangePassword)
-  private.GET(   "/users/:id/study_groups", handlers.GetUserStudyGroups)
+  private.GET(   "/users",                  controllers.GetUsers)
+  private.GET(   "/users/:id",              controllers.GetUser)
+  private.PATCH( "/users/:id/account",      controllers.UpdateAccount)
+  private.POST(  "/users/:id/avatar",       controllers.UploadAvatar)
+  private.PUT(   "/users/:id/courses",      controllers.UpdateCourses)
+  private.POST(  "/users/:id/delete",       controllers.DeleteUser)
+  private.PATCH( "/users/:id/password",     controllers.ChangePassword)
+  // private.GET(   "/users/:id/study_groups", handlers.GetUserStudyGroups)
 
   private.GET(   "/study_groups",                         handlers.GetStudyGroups)
   private.POST(  "/study_groups",                         handlers.CreateStudyGroup)

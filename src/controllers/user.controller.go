@@ -1,21 +1,24 @@
 package controllers
 
 import (
+	"encoding/json"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
+	"reflect"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	mailchimp "github.com/beeker1121/mailchimp-go"
+	 mailchimp "github.com/beeker1121/mailchimp-go"
 	"github.com/beeker1121/mailchimp-go/lists/members"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/prosperoa/study-groups/src/models"
 	"github.com/prosperoa/study-groups/src/server"
 	"github.com/prosperoa/study-groups/src/utils"
@@ -23,72 +26,95 @@ import (
 	"gopkg.in/guregu/null.v3"
 )
 
-func GetUser(userID string) (models.User, int, error) {
-	var user models.User
+func GetUser(c *gin.Context) {
+	userID, err := strconv.Atoi(c.Param("id"))
 
-	err := server.DB.Get(&user, "SELECT * FROM users WHERE id = $1", userID)
+	if err != nil || userID == 0 {
+		server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+		return
+	}
+
+	user := models.User{
+		ID: userID,
+	}
+
+	err = user.Get()
 
 	switch {
-	case err == sql.ErrNoRows:
-		return user, http.StatusNotFound, errors.New("user not found")
-	case err != nil:
-		return user, http.StatusInternalServerError, errors.New("unable to get user")
+		case err == sql.ErrNoRows:
+			server.Respond(c, nil, "user not found", http.StatusNotFound)
+			return
+		case err != nil:
+			server.Respond(c, nil, "unable to get user", http.StatusInternalServerError)
+			return
 	}
 
-	return user, http.StatusOK, nil
+	server.Respond(c, user, "", http.StatusOK)
 }
 
-func GetUsers(page, pageSize int) ([]models.User, int, error) {
-	var users []models.User
+func GetUsers(c *gin.Context) {
+	page := c.DefaultQuery("page", "0")
+	pageSize := c.DefaultQuery("page_size", "30")
 
-	err := server.DB.Select(&users, "SELECT * FROM users LIMIT $1 OFFSET $2",
-		pageSize, pageSize*page,
-	)
+	if page == "" || pageSize == "" {
+		server.Respond(c, nil, "missing page or page size", http.StatusBadRequest)
+		return
+	}
+
+	p, _ := strconv.Atoi(page)
+	ps, _ := strconv.Atoi(pageSize)
+
+	var users models.Users
+	err := users.Get(p, ps)
 
 	switch {
-	case err == sql.ErrNoRows, len(users) == 0:
-		return users, http.StatusNotFound, errors.New("no users found")
-	case err != nil:
-		return users, http.StatusInternalServerError, errors.New("unable to get users")
+		case err == sql.ErrNoRows:
+			server.Respond(c, nil, "no users found", http.StatusNotFound)
+			return
+		case err != nil:
+			server.Respond(c, nil, "unable to get users", http.StatusInternalServerError)
+			return
 	}
 
-	return users, http.StatusOK, nil
+	server.Respond(c, users, "", http.StatusOK)
 }
 
-func DeleteUser(userID, password string) (int, error) {
-	var passwordHash string
+func DeleteUser(c *gin.Context) {
+	var password models.Password
+	userID, _ := strconv.Atoi(c.Param("id"))
 
-	err := server.DB.Get(&passwordHash, "SELECT password FROM users WHERE id = $1", userID)
-
-	if err != nil {
-		return http.StatusBadRequest, errors.New("account doesn't exist")
+	if err := c.ShouldBindWith(&password, binding.JSON); err != nil || userID == 0 {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password))
-	if err != nil {
-		return http.StatusBadRequest, errors.New("incorrect password")
+	user := models.User{
+		ID: userID,
+		Password: password.Value,
 	}
 
-	var user models.User
+	err := user.Delete()
 
-	err = server.DB.Get(
-		&user,
-		"DELETE FROM users WHERE id = $1 RETURNING email, avatar",
-		userID,
-	)
-
-	if err != nil {
-		return http.StatusInternalServerError, errors.New("unable delete account")
+	switch {
+		case err == sql.ErrNoRows:
+			server.Respond(c, nil, "account doesn't exist", http.StatusNotFound)
+			return
+		case err == bcrypt.ErrMismatchedHashAndPassword:
+			server.Respond(c, nil, "incorrect password", http.StatusForbidden)
+			return
+		case err != nil:
+			server.Respond(c, nil, "unable to delete account", http.StatusInternalServerError)
+			return
 	}
 
-	// delete avatar
+	// delete avatar if it's not the stock avatar image
 	if !strings.Contains(user.Avatar.String, "stock-avatar") {
 		_, err = server.S3Service.DeleteObject(&s3.DeleteObjectInput{
 			Bucket: aws.String(server.S3Bucket),
 			Key:    aws.String(strings.TrimPrefix(user.Avatar.String, server.S3BucketURL)),
 		})
 
-		if err != nil { log.Println(err.Error()) }
+		if err != nil {	log.Println(err.Error()) }
 	}
 
 	// remove user from mailchimp list
@@ -109,61 +135,77 @@ func DeleteUser(userID, password string) (int, error) {
 			if err = members.Delete("4d6392ba4d", mailchimpID); err != nil {
 				log.Println(err.Error())
 			}
-		}
+		} else {
+			log.Println(err.Error())
+    }
 	} else {
 		log.Println(err.Error())
 	}
 
-	return http.StatusOK, nil
+	server.Respond(c, nil, "account successfully deleted", http.StatusOK)
 }
 
-func GetUserStudyGroups(userID string, page, pageSize int) ([]models.StudyGroup, int, error) {
-	var studyGroups []models.StudyGroup
+// func GetUserStudyGroups(c *gin.Context) {
+// 	userID := c.Param("id")
+// 	page := c.DefaultQuery("page", "0")
+// 	pageSize := c.DefaultQuery("page_size", "30")
 
-	err := server.DB.Select(
-		&studyGroups,
-		"SELECT * FROM study_groups WHERE user_id = $1 ORDER BY updated_on DESC LIMIT $2 OFFSET $3",
-		userID,
-		pageSize,
-		pageSize*page,
-	)
+// 	if !utils.IsInt(userID) || !utils.IsInt(page) || !utils.IsInt(pageSize) {
+// 		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	p, _ := strconv.Atoi(page)
+// 	ps, _ := strconv.Atoi(pageSize)
+
+// 	studyGroups, status, err := controllers.GetUserStudyGroups(userID, p, ps)
+
+// 	if err != nil {
+// 		server.Respond(c, nil, err.Error(), status)
+// 		return
+// 	}
+
+// 	server.Respond(c, studyGroups, "", status)
+// }
+
+func UploadAvatar(c *gin.Context) {
+	userID, _ := strconv.Atoi(c.Param("id"))
+	file, err := c.FormFile("image")
+	errMsg := "unable to upload avatar"
 
 	switch {
-	case err == sql.ErrNoRows, len(studyGroups) == 0:
-		return studyGroups, http.StatusNotFound, errors.New("no users study groups found")
-	case err != nil:
-		return studyGroups, http.StatusInternalServerError, errors.New("unable to get user's study groups")
+		case userID == 0:
+			server.Respond(c, nil, "invalid user id", http.StatusBadRequest)
+			return
+		case err != nil:
+			server.Respond(c, nil, "invalid image", http.StatusBadRequest)
+			return
+		case file.Size / utils.MB > utils.MB * 2:
+			server.Respond(c, nil, "image size must be 2MB or less", http.StatusBadRequest)
+			return
 	}
 
-	return studyGroups, http.StatusOK, nil
-}
+	user := models.User{ID: userID}
 
-func UploadAvatar(userID, ext string, image multipart.File) (string, int, error) {
-	var avatarURL null.String
-	errMsg := errors.New("unable to upload avatar")
-
-	err := server.DB.Get(&avatarURL, "SELECT avatar FROM users WHERE id = $1", userID)
-
-	switch {
-	case err == sql.ErrNoRows:
-		return avatarURL.String, http.StatusNotFound, errors.New("user not found")
-	case err != nil:
-		return avatarURL.String, http.StatusInternalServerError, errMsg
+	if err = user.Get(); err != nil {
+		server.Respond(c, nil, errMsg, http.StatusInternalServerError)
+		return
 	}
 
-	// delete old avatar
-	if !strings.Contains(avatarURL.String, "stock-avatar") {
+	// delete old avatar if it's not the stock avatar
+	if !strings.Contains(user.Avatar.String, "stock-avatar") {
 		_, err = server.S3Service.DeleteObject(&s3.DeleteObjectInput{
 			Bucket: aws.String(server.S3Bucket),
-			Key:    aws.String(strings.TrimPrefix(avatarURL.String, server.S3BucketURL)),
+			Key:    aws.String(strings.TrimPrefix(user.Avatar.String, server.S3BucketURL)),
 		})
 
-		if err != nil {
-			return avatarURL.String, http.StatusInternalServerError, errMsg
-		}
+		if err != nil {	log.Println(err.Error()) }
 	}
 
-	newAvatarFilename := fmt.Sprintf("%s-%s", userID, utils.RandString(16)+ext)
+	// construct image filename and upload
+	ext := filepath.Ext(file.Filename)
+	image, _ := file.Open()
+	newAvatarFilename := fmt.Sprintf("%d-%s", user.ID, utils.RandString(16) + ext)
 
 	result, err := server.S3Uploader.Upload(&s3manager.UploadInput{
 		Body:   image,
@@ -172,103 +214,124 @@ func UploadAvatar(userID, ext string, image multipart.File) (string, int, error)
 		ACL:    aws.String("public-read"),
 	})
 
-	if err != nil {
-		return avatarURL.String, http.StatusInternalServerError, errMsg
+	newAvatarURL := result.Location
+
+	if err != nil || user.SetAvatar(newAvatarURL) != nil {
+		server.Respond(c, nil, errMsg, http.StatusInternalServerError)
+		return
 	}
 
-	res, err := server.DB.Exec("UPDATE users SET avatar = $1 WHERE id = $2",
-		result.Location,
-		userID,
-	)
-
-	rowsAffected, _ := res.RowsAffected()
-
-	switch {
-	case rowsAffected == 0:
-		return avatarURL.String, http.StatusInternalServerError, errMsg
-	case err != nil:
-		return avatarURL.String, http.StatusInternalServerError, errMsg
-	}
-
-	return result.Location, http.StatusOK, nil
+	server.Respond(c, newAvatarURL, "", http.StatusOK)
 }
 
-func UpdateAccount(userID string, account models.Account) (models.User, int, error) {
-	var user models.User
+func UpdateAccount(c *gin.Context) {
+	var account models.Account
+	userID, _ := strconv.Atoi(c.Param("id"))
 
-	err := server.DB.Get(&user,
-		`UPDATE users
-    SET
-      first_name = $1,
-      last_name  = $2,
-      bio        = $3,
-      school     = $4,
-      major1     = $5,
-      major2     = $6,
-      minor      = $7,
-      updated_on = $8
-    WHERE id = $9
-    RETURNING *`,
-		account.FirstName,
-		null.NewString(account.LastName, account.LastName != ""),
-		null.NewString(account.Bio, account.Bio != ""),
-		null.NewString(account.School, account.School != ""),
-		null.NewString(account.Major1, account.Major1 != ""),
-		null.NewString(account.Major2, account.Major2 != ""),
-		null.NewString(account.Minor, account.Minor != ""),
-		time.Now(),
-		userID,
-	)
-
-	if err != nil {
-		log.Println(err.Error())
-		return user, http.StatusInternalServerError, errors.New("unable to update account")
+	if err := c.ShouldBindWith(&account, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing params", http.StatusBadRequest)
+		return
 	}
 
-	return user, http.StatusOK, nil
+	accountValues := reflect.ValueOf(&account).Elem()
+
+	// trim string values in account
+	for i := 0; i < accountValues.NumField(); i++ {
+		field := accountValues.Field(i)
+		if field.Interface() != "string" { continue }
+
+		str := field.Interface().(string)
+		field.SetString(utils.Trim(str))
+	}
+
+	if err := server.Validate.Struct(account); err != nil || userID == 0 {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
+	}
+
+	user := models.User{
+		ID: userID,
+		FirstName: account.FirstName,
+		LastName: null.NewString(account.LastName, account.LastName != ""),
+		Bio: null.NewString(account.Bio, account.Bio != ""),
+		School: null.NewString(account.School, account.School != ""),
+		Major1: null.NewString(account.Major1, account.Major1 != ""),
+		Major2: null.NewString(account.Major2, account.Major2 != ""),
+		Minor: null.NewString(account.Minor, account.Minor != ""),
+	}
+
+	if err := user.UpdateAccount(); err != nil {
+		server.Respond(c, nil, "unable to update account", http.StatusBadRequest)
+		return
+	}
+
+	server.Respond(c, user, "", http.StatusOK)
 }
 
-func ChangePassword(userID string, passwords models.ChangePassword) (models.User, int, error) {
-	var user models.User
-	var currentPasswordHash string
-	errMsg := errors.New("unable to change password")
+func ChangePassword(c *gin.Context) {
+	var passwords models.ChangePassword
+	userID, _ := strconv.Atoi(c.Param("id"))
 
-	err := server.DB.Get(&currentPasswordHash, "SELECT password FROM users WHERE id = $1",
-		userID,
-	)
-	if err != nil {
-		return user, http.StatusInternalServerError, errMsg
+	if err := c.ShouldBindWith(&passwords, binding.JSON); err != nil {
+		server.Respond(c, nil, "missing params", http.StatusBadRequest)
+		return
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(currentPasswordHash), []byte(passwords.Current))
-	if err != nil {
-		return user, http.StatusBadRequest, errors.New("incorrect password")
+	if err := server.Validate.Struct(passwords); err != nil || userID == 0 {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
 	}
 
-	newPasswordHash, err := bcrypt.GenerateFromPassword([]byte(passwords.New), bcrypt.MinCost)
+	err := server.Validate.VarWithValue(passwords.New, passwords.Confirm, "eqfield")
 	if err != nil {
-		return user, http.StatusInternalServerError, errMsg
-	}
+		server.Respond(c, nil, "passwords must match", http.StatusBadRequest)
+		return
+  }
 
-	err = server.DB.Get(&user, "UPDATE users SET password = $1 WHERE id = $2 RETURNING *",
-		newPasswordHash, userID,
-	)
-	if err != nil {
-		return user, http.StatusInternalServerError, errMsg
-	}
+  user := models.User{
+    ID: userID,
+    Password: passwords.Current,
+  }
 
-	return user, http.StatusOK, nil
+  err = user.ChangePassword(passwords.New)
+
+  switch {
+    case err == sql.ErrNoRows:
+      server.Respond(c, nil, err.Error(), http.StatusNotFound)
+      return
+    case err == bcrypt.ErrMismatchedHashAndPassword:
+      server.Respond(c, nil, "incorrect password", http.StatusUnauthorized)
+      return
+    case err != nil:
+      server.Respond(c, nil, err.Error(), http.StatusInternalServerError)
+      return
+  }
+
+	server.Respond(c, nil, "password successfully changed", http.StatusOK)
 }
 
-func UpdateCourses (userID string, courses []byte) (int, error) {
-	_, err := server.DB.Exec("UPDATE users SET courses = $1 WHERE id = $2",
-		courses, userID,
-	)
+func UpdateCourses (c *gin.Context) {
+	var coursesJSON []models.Course
+	userID, _ := strconv.Atoi(c.Param("id"))
 
-	if err != nil {
-		log.Println(err.Error())
-		return http.StatusInternalServerError, errors.New("unable to update courses")
+	if err := c.ShouldBindWith(&coursesJSON, binding.JSON); err != nil || userID == 0 {
+		server.Respond(c, nil, "invalid params", http.StatusBadRequest)
+		return
 	}
 
-	return http.StatusOK, nil
+	courses, err := json.Marshal(coursesJSON)
+	if err != nil {
+		server.Respond(c, nil, "invalid courses JSON format", http.StatusBadRequest)
+		return
+	}
+
+	user := models.User{ID: userID}
+	user.Courses.Scan(courses)
+
+	if err = user.UpdateCourses(); err != nil {
+		server.Respond(c, nil, "unable to update courses", http.StatusInternalServerError)
+		return
+	}
+
+	server.Respond(c, nil, "courses successfully updated", http.StatusOK)
 }
